@@ -15,7 +15,7 @@ The debug APK has been built at:
 2. Create a new Web Service on Render
 3. Connect your GitHub repo
 4. Configure:
-   - **Build Command**: `pip install -r requirements.txt`
+   - **Build Command**: `poetry install`
    - **Start Command**: `cd backend && PYTHONPATH=. gunicorn -w 4 -b 0.0.0.0:$PORT app:app`
 5. Add Environment Variables:
    - `SUPABASE_URL`: your Supabase URL
