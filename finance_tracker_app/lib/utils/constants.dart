@@ -1,11 +1,23 @@
+import 'package:flutter/foundation.dart';
+
 class Constants {
   static const String appName = 'Finance Tracker';
   
   // Base URL for the backend API
   // Use 10.0.2.2 for Android emulator to connect to host's localhost
   // Use 127.0.0.1 for iOS simulator
-  // For physical device, use your computer's IP address (e.g., http://192.168.1.x:5001)
-  static const String baseUrl = 'http://10.0.2.2:5001';
+  // For production, use your deployed backend URL
+  // Example: https://your-app.onrender.com
+  static String get baseUrl {
+    if (kDebugMode) {
+      // Debug mode - use local emulator
+      return 'http://10.0.2.2:5001';
+    } else {
+      // Release mode - use production backend
+      // TODO: Replace with your Render backend URL
+      return 'https://finance-tracker-app-draft01.onrender.com';
+    }
+  }
   
   // Supabase Configuration
   static const String supabaseUrl = 'https://oeallybeawbthptebwca.supabase.co';
