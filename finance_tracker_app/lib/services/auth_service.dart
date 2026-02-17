@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import '../models/user.dart';
+import '../utils/constants.dart';
+
+/// Result of token validation
+enum TokenValidationResult { valid, invalid, networkError }
 
 class AuthService {
   static const String _tokenKey = 'auth_token';
@@ -56,50 +61,179 @@ class AuthService {
       return false;
     }
     
-    // Validate token with backend to ensure it's still valid
+    // First, do a quick local check - decode token to check expiration
     try {
-      final response = await ApiService.validateToken();
-      
-      if (response['valid'] == true) {
-        // Token is valid, update user info from server response
-        final userId = response['user_id'] as String?;
-        final userName = response['name'] as String?;
-        
-        if (userId != null) {
-          await prefs.setString(_userIdKey, userId);
-        }
-        if (userName != null) {
-          await prefs.setString(_userNameKey, userName);
-        }
-        
-        // Also update stored user data if needed
-        final currentUser = await getCurrentUser();
-        if (currentUser != null) {
-          final updatedUser = User(
-            id: userId ?? currentUser.id,
-            email: currentUser.email,
-            name: userName ?? currentUser.name,
-            createdAt: currentUser.createdAt,
-          );
-          _currentUser = updatedUser;
-          await prefs.setString(_userKey, jsonEncode(updatedUser.toJson()));
-        }
-        
-        _isAuthChecked = true;
-        return true;
-      } else {
-        // Token is invalid/expired, clear local storage
-        await logout();
+      final localPayload = _decodeTokenLocally(token);
+      if (localPayload == null) {
+        // Token is invalid or expired locally, clear and return false
+        await _clearLocalAuth();
         _isAuthChecked = true;
         return false;
       }
     } catch (e) {
-      // Network error - try to use cached token, but let the dashboard handle errors
-      // This allows the app to work when server is temporarily unavailable
-      // We'll let the first API call determine if the token is actually valid
+      // Can't decode locally, try server validation
+    }
+    
+    // Try to validate token with backend (with retries for cold start)
+    final validationResult = await _validateTokenWithRetry();
+    
+    if (validationResult == TokenValidationResult.valid) {
+      // Token is valid, update user info from server response
       _isAuthChecked = true;
       return true;
+    } else if (validationResult == TokenValidationResult.invalid) {
+      // Token is invalid/expired, clear local storage
+      await _clearLocalAuth();
+      _isAuthChecked = true;
+      return false;
+    } else {
+      // Network error - we have a locally stored token that hasn't expired
+      // Check if it's not expired locally before allowing access
+      final localPayload = _decodeTokenLocally(token);
+      if (localPayload != null) {
+        // Token exists and hasn't expired locally, allow access
+        // The API calls will fail if token is truly invalid
+        _isAuthChecked = true;
+        return true;
+      } else {
+        // Local token is expired, require fresh login
+        await _clearLocalAuth();
+        _isAuthChecked = true;
+        return false;
+      }
     }
+  }
+
+  /// Decode token locally to check expiration without server call
+  static Map<String, dynamic>? _decodeTokenLocally(String token) {
+    try {
+      // Simple base64 decode and JSON parse to check exp claim
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      
+      // Add padding if needed
+      var payload = parts[1];
+      final padLength = (4 - payload.length % 4) % 4;
+      payload += '=' * padLength;
+      
+      final decoded = Uri.parse('data:application/json;base64,$payload').data?.contentAsBytes();
+      if (decoded == null) return null;
+      
+      final String jsonStr = String.fromCharCodes(decoded);
+      final Map<String, dynamic> payloadJson = Map<String, dynamic>.from(
+        const JsonDecoder().convert(jsonStr)
+      );
+      
+      // Check expiration
+      final exp = payloadJson['exp'] as int?;
+      if (exp != null) {
+        final expirationDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+        if (DateTime.now().isAfter(expirationDate)) {
+          return null; // Token is expired
+        }
+      }
+      
+      return payloadJson;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Validate token with backend with retry logic for cold start
+  static Future<TokenValidationResult> _validateTokenWithRetry() async {
+    const int maxRetries = 3;
+    const int initialDelayMs = 1000;
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final headers = await _getHeadersForValidation();
+        
+        final response = await http.post(
+          Uri.parse('${Constants.baseUrl}/api/auth/validate'),
+          headers: headers,
+        ).timeout(const Duration(seconds: 15));
+        
+        // Check for non-JSON responses
+        if (response.body.isEmpty || 
+            response.body.trim().startsWith('<') || 
+            response.body.trim().startsWith('<!DOCTYPE')) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: initialDelayMs * (attempt + 1)));
+            continue;
+          }
+          return TokenValidationResult.networkError;
+        }
+        
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          if (data['valid'] == true) {
+            // Token is valid, update user info from server response
+            final userId = data['user_id'] as String?;
+            final userName = data['name'] as String?;
+            final prefs = await getPrefs();
+            
+            if (userId != null) {
+              await prefs.setString(_userIdKey, userId);
+            }
+            if (userName != null) {
+              await prefs.setString(_userNameKey, userName);
+            }
+            
+            // Also update stored user data if needed
+            final currentUser = await getCurrentUser();
+            if (currentUser != null) {
+              final updatedUser = User(
+                id: userId ?? currentUser.id,
+                email: currentUser.email,
+                name: userName ?? currentUser.name,
+                createdAt: currentUser.createdAt,
+              );
+              _currentUser = updatedUser;
+              await prefs.setString(_userKey, jsonEncode(updatedUser.toJson()));
+            }
+            
+            return TokenValidationResult.valid;
+          } else {
+            return TokenValidationResult.invalid;
+          }
+        } else {
+          return TokenValidationResult.invalid;
+        }
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: initialDelayMs * (attempt + 1)));
+          continue;
+        }
+        return TokenValidationResult.networkError;
+      }
+    }
+    return TokenValidationResult.networkError;
+  }
+
+  /// Get headers for token validation (separate to avoid side effects)
+  static Future<Map<String, String>> _getHeadersForValidation() async {
+    final prefs = await getPrefs();
+    final token = prefs.getString(_tokenKey);
+    
+    if (token == null || token.isEmpty) {
+      return {'Content-Type': 'application/json'};
+    }
+    
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  /// Clear all local auth data
+  static Future<void> _clearLocalAuth() async {
+    final prefs = await getPrefs();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_userIdKey);
+    await prefs.remove(_userNameKey);
+    _currentUser = null;
   }
 
   static Future<String?> getToken() async {
