@@ -1,9 +1,0 @@
-Flask==3.0.0
-Flask-CORS==4.0.0
-supabase==2.0.2
-python-dotenv==1.0.0
-PyJWT==2.8.0
-gunicorn==21.2.0
-pydantic==2.5.0
-
-
