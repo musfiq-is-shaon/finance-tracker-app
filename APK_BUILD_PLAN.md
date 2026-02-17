@@ -7,6 +7,7 @@ The debug APK has been built at:
 ## Files Created for Render Deployment:
 1. **Procfile** (root) - `web: cd backend && PYTHONPATH=. gunicorn -w 4 -b 0.0.0.0:$PORT app:app`
 2. **requirements.txt** (root) - Python dependencies
+3. **runtime.txt** - Specifies Python 3.11
 
 ## Render Deployment Steps:
 
