@@ -16,6 +16,26 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentIndex = 0;
+  bool _hasLoadedData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load dashboard data after first frame is rendered
+    // Auth validation is now completed in main.dart before navigating here
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    if (_hasLoadedData) return;
+    _hasLoadedData = true;
+    
+    if (mounted) {
+      await ref.read(dashboardProvider.notifier).loadDashboard();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

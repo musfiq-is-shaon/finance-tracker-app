@@ -7,9 +7,7 @@ final loansProvider = StateNotifierProvider<LoansNotifier, AsyncValue<List<Loan>
 });
 
 class LoansNotifier extends StateNotifier<AsyncValue<List<Loan>>> {
-  LoansNotifier() : super(const AsyncValue.loading()) {
-    loadLoans();
-  }
+  LoansNotifier() : super(const AsyncValue.data([]));
 
   Future<void> loadLoans() async {
     state = const AsyncValue.loading();

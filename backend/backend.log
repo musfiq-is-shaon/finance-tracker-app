@@ -1,14 +1,1 @@
- * Serving Flask app 'app'
- * Debug mode: off
-[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5001
- * Running on http://192.168.68.102:5001
-[33mPress CTRL+C to quit[0m
-127.0.0.1 - - [17/Feb/2026 13:40:05] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [17/Feb/2026 13:40:16] "[35m[1mPOST /api/auth/signup HTTP/1.1[0m" 201 -
-127.0.0.1 - - [17/Feb/2026 13:40:16] "POST /api/auth/login HTTP/1.1" 200 -
-127.0.0.1 - - [17/Feb/2026 13:40:16] "[35m[1mPOST /api/transactions HTTP/1.1[0m" 201 -
-127.0.0.1 - - [17/Feb/2026 13:40:28] "POST /api/auth/login HTTP/1.1" 200 -
-127.0.0.1 - - [17/Feb/2026 13:40:28] "[35m[1mPOST /api/loans HTTP/1.1[0m" 201 -
-127.0.0.1 - - [17/Feb/2026 13:41:46] "GET /health HTTP/1.1" 200 -
+nohup: python: No such file or directory

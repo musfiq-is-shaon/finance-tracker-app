@@ -25,6 +25,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   String _selectedCategory = '';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  double _currentBalance = 0.0;
+  bool _isCheckingBalance = true;
 
   @override
   void initState() {
@@ -33,6 +35,25 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     _selectedCategory = _type == 'income' 
         ? Constants.incomeCategories.first 
         : Constants.expenseCategories.first;
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final balanceData = await ref.read(balanceProvider.future);
+      if (mounted) {
+        setState(() {
+          _currentBalance = balanceData;
+          _isCheckingBalance = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCheckingBalance = false;
+        });
+      }
+    }
   }
 
   @override
@@ -68,6 +89,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   Future<void> _saveTransaction() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Check balance for expenses
+    if (_type == 'expense') {
+      final amount = double.tryParse(_amountController.text) ?? 0;
+      if (amount > _currentBalance) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Insufficient balance! You have \$${_currentBalance.toStringAsFixed(2)}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -92,9 +127,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Error: $e';
+        // Check if it's an insufficient balance error from backend
+        if (e.toString().contains('Insufficient balance')) {
+          errorMessage = 'Insufficient balance! You have \$${_currentBalance.toStringAsFixed(2)}';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -128,6 +168,43 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Balance Display
+              GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet, color: AppTheme.primaryColor, size: 28),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Available Balance',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        _isCheckingBalance
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+                              )
+                            : Text(
+                                '\$${_currentBalance.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -199,6 +276,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         final amount = double.tryParse(value);
                         if (amount == null || amount <= 0) {
                           return 'Please enter a valid amount';
+                        }
+                        // Additional validation for expenses
+                        if (_type == 'expense' && amount > _currentBalance) {
+                          return 'Insufficient balance';
                         }
                         return null;
                       },

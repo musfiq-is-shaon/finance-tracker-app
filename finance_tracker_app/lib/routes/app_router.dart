@@ -17,17 +17,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) async {
-      final isLoggedIn = await AuthService.isLoggedIn();
       final isAuthRoute = state.matchedLocation == '/login' || 
                           state.matchedLocation == '/signup' ||
                           state.matchedLocation == '/';
       
-      if (!isLoggedIn && !isAuthRoute) {
+      if (isAuthRoute) {
+        return null;
+      }
+      
+      // For protected routes, check if user has a token
+      final token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
         return '/login';
       }
-      if (isLoggedIn && isAuthRoute) {
-        return '/dashboard';
-      }
+      
       return null;
     },
     routes: [

@@ -10,26 +10,106 @@ class AuthService {
   static const String _userNameKey = 'user_name';
   
   static SharedPreferences? _prefs;
+  static bool _isInitialized = false;
+  static bool _isAuthChecked = false; // Track if auth check is complete
   static User? _currentUser;
 
   static Future<SharedPreferences> getPrefs() async {
-    if (_prefs == null) {
+    if (_prefs == null || !_isInitialized) {
       _prefs = await SharedPreferences.getInstance();
+      _isInitialized = true;
     }
     return _prefs!;
   }
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    _isInitialized = true;
   }
 
+  /// Check if auth initialization check is complete
+  static bool isAuthChecked() {
+    return _isAuthChecked;
+  }
+
+  /// Wait for auth check to complete and trigger it if not started
+  static Future<bool> waitForAuthCheck() async {
+    // If auth is already checked, return immediately
+    if (_isAuthChecked) {
+      return true;
+    }
+    
+    // Initialize SharedPreferences if needed first
+    await init();
+    
+    // Now trigger the auth check
+    return await isLoggedIn();
+  }
+  
   static Future<bool> isLoggedIn() async {
-    final token = _prefs?.getString(_tokenKey);
-    return token != null && token.isNotEmpty;
+    // First check if token exists locally
+    final prefs = await getPrefs();
+    final token = prefs.getString(_tokenKey);
+    
+    if (token == null || token.isEmpty) {
+      _isAuthChecked = true;
+      return false;
+    }
+    
+    // Validate token with backend to ensure it's still valid
+    try {
+      final response = await ApiService.validateToken();
+      
+      if (response['valid'] == true) {
+        // Token is valid, update user info from server response
+        final userId = response['user_id'] as String?;
+        final userName = response['name'] as String?;
+        
+        if (userId != null) {
+          await prefs.setString(_userIdKey, userId);
+        }
+        if (userName != null) {
+          await prefs.setString(_userNameKey, userName);
+        }
+        
+        // Also update stored user data if needed
+        final currentUser = await getCurrentUser();
+        if (currentUser != null) {
+          final updatedUser = User(
+            id: userId ?? currentUser.id,
+            email: currentUser.email,
+            name: userName ?? currentUser.name,
+            createdAt: currentUser.createdAt,
+          );
+          _currentUser = updatedUser;
+          await prefs.setString(_userKey, jsonEncode(updatedUser.toJson()));
+        }
+        
+        _isAuthChecked = true;
+        return true;
+      } else {
+        // Token is invalid/expired, clear local storage
+        await logout();
+        _isAuthChecked = true;
+        return false;
+      }
+    } catch (e) {
+      // Network error - try to use cached token, but let the dashboard handle errors
+      // This allows the app to work when server is temporarily unavailable
+      // We'll let the first API call determine if the token is actually valid
+      _isAuthChecked = true;
+      return true;
+    }
   }
 
   static Future<String?> getToken() async {
-    return _prefs?.getString(_tokenKey);
+    final prefs = await getPrefs();
+    return prefs.getString(_tokenKey);
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await getPrefs();
+    return prefs.getString(_userIdKey);
   }
 
   static String? getCurrentUserId() {
@@ -42,7 +122,8 @@ class AuthService {
 
   static Future<User?> getCurrentUser() async {
     if (_currentUser != null) return _currentUser;
-    final userData = _prefs?.getString(_userKey);
+    final prefs = await getPrefs();
+    final userData = prefs.getString(_userKey);
     if (userData != null) {
       try {
         final Map<String, dynamic> json = jsonDecode(userData);
@@ -62,10 +143,11 @@ class AuthService {
       final userId = response['user_id'] as String;
       final userName = response['name'] as String?;
       
-      await _prefs?.setString(_tokenKey, token);
-      await _prefs?.setString(_userIdKey, userId);
+      final prefs = await getPrefs();
+      await prefs.setString(_tokenKey, token);
+      await prefs.setString(_userIdKey, userId);
       if (userName != null) {
-        await _prefs?.setString(_userNameKey, userName);
+        await prefs.setString(_userNameKey, userName);
       }
       
       _currentUser = User(
@@ -74,7 +156,8 @@ class AuthService {
         name: userName ?? name,
         createdAt: DateTime.now(),
       );
-      await _prefs?.setString(_userKey, jsonEncode(_currentUser!.toJson()));
+      await prefs.setString(_userKey, jsonEncode(_currentUser!.toJson()));
+      _isAuthChecked = true; // Mark auth as checked after successful signup
       return _currentUser!;
     } catch (e) {
       rethrow;
@@ -88,10 +171,11 @@ class AuthService {
       final userId = response['user_id'] as String;
       final userName = response['name'] as String?;
       
-      await _prefs?.setString(_tokenKey, token);
-      await _prefs?.setString(_userIdKey, userId);
+      final prefs = await getPrefs();
+      await prefs.setString(_tokenKey, token);
+      await prefs.setString(_userIdKey, userId);
       if (userName != null) {
-        await _prefs?.setString(_userNameKey, userName);
+        await prefs.setString(_userNameKey, userName);
       }
       
       _currentUser = User(
@@ -100,7 +184,8 @@ class AuthService {
         name: userName,
         createdAt: DateTime.now(),
       );
-      await _prefs?.setString(_userKey, jsonEncode(_currentUser!.toJson()));
+      await prefs.setString(_userKey, jsonEncode(_currentUser!.toJson()));
+      _isAuthChecked = true; // Mark auth as checked after successful login
       return _currentUser!;
     } catch (e) {
       rethrow;
@@ -108,11 +193,13 @@ class AuthService {
   }
 
   static Future<void> logout() async {
-    await _prefs?.remove(_tokenKey);
-    await _prefs?.remove(_userKey);
-    await _prefs?.remove(_userIdKey);
-    await _prefs?.remove(_userNameKey);
+    final prefs = await getPrefs();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_userIdKey);
+    await prefs.remove(_userNameKey);
     _currentUser = null;
+    _isAuthChecked = false; // Reset auth check flag for next login
   }
 }
 

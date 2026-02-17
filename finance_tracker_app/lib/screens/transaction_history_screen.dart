@@ -20,6 +20,26 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   DateTime? _startDate;
   DateTime? _endDate;
   String _filterType = 'all';
+  bool _hasLoadedData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load transactions after first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    if (_hasLoadedData) return;
+    _hasLoadedData = true;
+    // Add a small delay to ensure auth is fully validated
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      await ref.read(transactionsProvider.notifier).loadTransactions();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

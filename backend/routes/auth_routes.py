@@ -1,8 +1,41 @@
 from flask import Blueprint, request, jsonify
 from services.supabase_service import get_client
-from utils.jwt_handler import create_token
+from utils.jwt_handler import create_token, decode_token
 
 auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/validate', methods=['POST'])
+def validate_token():
+    """Validate the JWT token and return user info if valid"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'valid': False, 'message': 'No token provided'}), 401
+    
+    token = auth_header.split(' ')[1]
+    payload = decode_token(token)
+    
+    if not payload:
+        return jsonify({'valid': False, 'message': 'Invalid or expired token'}), 401
+    
+    user_id = payload.get('user_id')
+    if not user_id:
+        return jsonify({'valid': False, 'message': 'Invalid token payload'}), 401
+    
+    # Get user info from database
+    supabase = get_client()
+    try:
+        profile_response = supabase.table('profiles').select('name').eq('id', user_id).execute()
+        user_name = None
+        if profile_response.data and len(profile_response.data) > 0:
+            user_name = profile_response.data[0].get('name')
+        
+        return jsonify({
+            'valid': True,
+            'user_id': user_id,
+            'name': user_name
+        }), 200
+    except Exception as e:
+        return jsonify({'valid': False, 'message': str(e)}), 401
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():

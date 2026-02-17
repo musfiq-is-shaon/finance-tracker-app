@@ -8,8 +8,18 @@ class ApiService {
   static String get baseUrl => '${Constants.baseUrl}/api';
   
   static Future<Map<String, String>> _getHeaders() async {
+    // Ensure prefs is initialized and get the token properly
+    await AuthService.init(); // Ensure AuthService is initialized
     final prefs = await AuthService.getPrefs();
     final token = prefs.getString('auth_token');
+    
+    // Handle null or empty token
+    if (token == null || token.isEmpty) {
+      return {
+        'Content-Type': 'application/json',
+      };
+    }
+    
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -17,6 +27,55 @@ class ApiService {
   }
 
   // Auth endpoints
+  static Future<Map<String, dynamic>> validateToken() async {
+    // Add retry logic for network issues
+    int maxRetries = 3;
+    int retryDelayMs = 500;
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final headers = await _getHeaders();
+        
+        final response = await http.post(
+          Uri.parse('$baseUrl/auth/validate'),
+          headers: headers,
+        ).timeout(const Duration(seconds: 10));
+        
+        // Check for non-JSON responses
+        if (response.body.isEmpty) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Empty response from server');
+        }
+        
+        if (response.body.trim().startsWith('<') || response.body.trim().startsWith('<!DOCTYPE')) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Server error: ${response.statusCode} - HTML response');
+        }
+        
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return data;
+        } else {
+          throw Exception(data['message'] ?? 'Token validation failed');
+        }
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: retryDelayMs * (attempt + 1)));
+          continue;
+        }
+        rethrow;
+      }
+    }
+    throw Exception('Failed to validate token after $maxRetries attempts');
+  }
+
   static Future<Map<String, dynamic>> signup(String name, String email, String password) async {
     try {
       final response = await http.post(
@@ -160,6 +219,19 @@ class ApiService {
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Failed to get dashboard: $e');
+    }
+  }
+
+  // Get balance for validation
+  static Future<Map<String, dynamic>> getBalance() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/dashboard/balance'),
+        headers: await _getHeaders(),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to get balance: $e');
     }
   }
 

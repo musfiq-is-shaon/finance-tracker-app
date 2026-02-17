@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/theme/app_theme.dart';
-import '../providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -34,19 +33,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
     
     _controller.forward();
-    _checkAuth();
+    _navigateAfterDelay();
   }
 
-  Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    
-    final isLoggedIn = await ref.read(authStateProvider.future);
-    if (isLoggedIn) {
+  void _navigateAfterDelay() {
+    // Just a small delay for animation to play
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      // Navigate to dashboard - auth is already validated in main.dart
       context.go('/dashboard');
-    } else {
-      context.go('/login');
-    }
+    });
   }
 
   @override

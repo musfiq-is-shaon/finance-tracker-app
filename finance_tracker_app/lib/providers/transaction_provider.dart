@@ -7,9 +7,7 @@ final transactionsProvider = StateNotifierProvider<TransactionsNotifier, AsyncVa
 });
 
 class TransactionsNotifier extends StateNotifier<AsyncValue<List<Transaction>>> {
-  TransactionsNotifier() : super(const AsyncValue.loading()) {
-    loadTransactions();
-  }
+  TransactionsNotifier() : super(const AsyncValue.data([]));
 
   Future<void> loadTransactions({String? category, DateTime? startDate, DateTime? endDate}) async {
     state = const AsyncValue.loading();

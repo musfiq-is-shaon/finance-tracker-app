@@ -59,10 +59,22 @@ final dashboardProvider = StateNotifierProvider<DashboardNotifier, AsyncValue<Da
   return DashboardNotifier();
 });
 
+// Provider to get current balance for validation
+final balanceProvider = FutureProvider<double>((ref) async {
+  final data = await ApiService.getBalance();
+  return (data['balance'] as num?)?.toDouble() ?? 0.0;
+});
+
 class DashboardNotifier extends StateNotifier<AsyncValue<DashboardData>> {
-  DashboardNotifier() : super(const AsyncValue.loading()) {
-    loadDashboard();
-  }
+  DashboardNotifier() : super(AsyncValue.data(DashboardData(
+    totalBalance: 0,
+    totalIncome: 0,
+    totalExpenses: 0,
+    loanGiven: 0,
+    loanBorrowed: 0,
+    monthlyData: [],
+    recentTransactions: [],
+  )));
 
   Future<void> loadDashboard() async {
     state = const AsyncValue.loading();

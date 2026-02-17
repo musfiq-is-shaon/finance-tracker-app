@@ -17,6 +17,38 @@ def get_user_from_token():
     except:
         return None
 
+
+def calculate_balance(user_id):
+    """Calculate current balance including loans"""
+    supabase = get_client()
+    
+    # Get all transactions
+    tx_response = supabase.table('transactions').select('*').eq('user_id', user_id).execute()
+    transactions = tx_response.data
+    
+    # Get all unpaid loans
+    loan_response = supabase.table('loans').select('*').eq('user_id', user_id).eq('is_paid', False).execute()
+    loans = loan_response.data
+    
+    # Calculate totals
+    total_income = sum(t['amount'] for t in transactions if t['type'] == 'income')
+    total_expenses = sum(t['amount'] for t in transactions if t['type'] == 'expense')
+    
+    total_loan_given = sum(
+        l['amount'] - (l.get('paid_amount') or 0) 
+        for l in loans 
+        if l['type'] == 'given'
+    )
+    total_loan_borrowed = sum(
+        l['amount'] - (l.get('paid_amount') or 0) 
+        for l in loans 
+        if l['type'] == 'borrowed'
+    )
+    
+    # Total Money = Income - Expenses + Borrowed - Given
+    return total_income - total_expenses + total_loan_borrowed - total_loan_given
+
+
 @loan_bp.route('', methods=['GET'])
 def get_loans():
     user_id = get_user_from_token()
@@ -36,12 +68,25 @@ def add_loan():
     
     data = request.get_json()
     
+    loan_type = data.get('type')
+    amount = float(data.get('amount', 0))
+    
+    # Check balance for "loan given" - cannot give more than current balance
+    if loan_type == 'given':
+        current_balance = calculate_balance(user_id)
+        if amount > current_balance:
+            return jsonify({
+                'message': 'Insufficient balance to give this loan',
+                'current_balance': current_balance,
+                'required': amount
+            }), 400
+    
     loan_data = {
         'id': str(uuid.uuid4()),
         'user_id': user_id,
-        'type': data.get('type'),
+        'type': loan_type,
         'person_name': data.get('person_name'),
-        'amount': data.get('amount'),
+        'amount': amount,
         'paid_amount': data.get('paid_amount'),
         'description': data.get('description'),
         'date': data.get('date'),
