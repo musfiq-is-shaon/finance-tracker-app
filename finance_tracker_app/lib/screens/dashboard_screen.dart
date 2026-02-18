@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/dashboard_provider.dart';
+import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../utils/formatters.dart';
 
@@ -122,6 +123,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader() {
+    // Get user's name from AuthService
+    final userName = AuthService.getCurrentUserName();
+    final displayName = userName?.isNotEmpty == true ? userName! : 'User';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -129,7 +134,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hello!',
+              'Hello, $displayName!',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white.withOpacity(0.7),
