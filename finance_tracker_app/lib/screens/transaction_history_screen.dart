@@ -220,81 +220,187 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.cardColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Filter Transactions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filter Transactions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  TextButton(
+                    TextButton(
+                      onPressed: () {
+                        setModalState(() {
+                          _filterType = 'all';
+                          _selectedCategory = null;
+                          _startDate = null;
+                          _endDate = null;
+                        });
+                        setState(() {});
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text('Type', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _buildFilterChip('all', 'All', setModalState),
+                    _buildFilterChip('income', 'Income', setModalState),
+                    _buildFilterChip('expense', 'Expense', setModalState),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('Category', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildCategoryChip(null, 'All', setModalState),
+                    ...Constants.expenseCategories.map((c) => _buildCategoryChip(c, c, setModalState)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('Date Range', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateButton(
+                        context,
+                        'Start Date',
+                        _startDate,
+                        (date) {
+                          setModalState(() => _startDate = date);
+                          setState(() {});
+                        },
+                        setModalState,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDateButton(
+                        context,
+                        'End Date',
+                        _endDate,
+                        (date) {
+                          setModalState(() => _endDate = date);
+                          setState(() {});
+                        },
+                        setModalState,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
                     onPressed: () {
-                      setModalState(() {
-                        _filterType = 'all';
-                        _selectedCategory = null;
-                        _startDate = null;
-                        _endDate = null;
-                      });
-                      ref.read(transactionsProvider.notifier).loadTransactions();
+                      setState(() {});
                       Navigator.pop(context);
                     },
-                    child: const Text('Clear'),
+                    child: const Text('Apply Filter'),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Text('Type', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  _buildFilterChip('all', 'All', setModalState),
-                  _buildFilterChip('income', 'Income', setModalState),
-                  _buildFilterChip('expense', 'Expense', setModalState),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text('Category', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildCategoryChip(null, 'All', setModalState),
-                  ...Constants.expenseCategories.map((c) => _buildCategoryChip(c, c, setModalState)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ref.read(transactionsProvider.notifier).loadTransactions(
-                      category: _selectedCategory,
-                      startDate: _startDate,
-                      endDate: _endDate,
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Apply Filter'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateButton(
+    BuildContext context,
+    String label,
+    DateTime? date,
+    Function(DateTime?) onChanged,
+    StateSetter setModalState,
+  ) {
+    return GestureDetector(
+      onTap: () async {
+        final selectedDate = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppTheme.primaryColor,
+                  onPrimary: Colors.white,
+                  surface: AppTheme.cardColor,
+                  onSurface: Colors.white,
                 ),
               ),
-            ],
+              child: child!,
+            );
+          },
+        );
+        if (selectedDate != null) {
+          onChanged(selectedDate);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: date != null ? AppTheme.primaryColor : Colors.transparent,
           ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 18, color: Colors.white70),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                date != null ? Formatters.formatDate(date) : label,
+                style: TextStyle(
+                  color: date != null ? Colors.white : Colors.white54,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (date != null)
+              GestureDetector(
+                onTap: () {
+                  onChanged(null);
+                  setModalState(() {});
+                  setState(() {});
+                },
+                child: const Icon(Icons.clear, size: 18, color: Colors.white54),
+              ),
+          ],
         ),
       ),
     );

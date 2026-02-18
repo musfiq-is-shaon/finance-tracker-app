@@ -17,6 +17,8 @@ class LoanListScreen extends ConsumerStatefulWidget {
 class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _hasLoadedData = false;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -56,6 +58,12 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () => _showFilterDialog(context),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primaryColor,
@@ -82,8 +90,15 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
           ),
         ),
         data: (loans) {
-          final givenLoans = loans.where((l) => l.type == 'given').toList();
-          final borrowedLoans = loans.where((l) => l.type == 'borrowed').toList();
+          // Apply date filters
+          var filteredLoans = loans.where((l) {
+            if (_startDate != null && l.date.isBefore(_startDate!)) return false;
+            if (_endDate != null && l.date.isAfter(_endDate!)) return false;
+            return true;
+          }).toList();
+          
+          final givenLoans = filteredLoans.where((l) => l.type == 'given').toList();
+          final borrowedLoans = filteredLoans.where((l) => l.type == 'borrowed').toList();
 
           return TabBarView(
             controller: _tabController,
@@ -401,6 +416,172 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                 context.push('/add-loan', extra: 'borrowed');
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filter Loans',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setModalState(() {
+                          _startDate = null;
+                          _endDate = null;
+                        });
+                        setState(() {});
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text('Date Range', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateButton(
+                        context,
+                        'Start Date',
+                        _startDate,
+                        (date) {
+                          setModalState(() => _startDate = date);
+                          setState(() {});
+                        },
+                        setModalState,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDateButton(
+                        context,
+                        'End Date',
+                        _endDate,
+                        (date) {
+                          setModalState(() => _endDate = date);
+                          setState(() {});
+                        },
+                        setModalState,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {});
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Apply Filter'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateButton(
+    BuildContext context,
+    String label,
+    DateTime? date,
+    Function(DateTime?) onChanged,
+    StateSetter setModalState,
+  ) {
+    return GestureDetector(
+      onTap: () async {
+        final selectedDate = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppTheme.primaryColor,
+                  onPrimary: Colors.white,
+                  surface: AppTheme.cardColor,
+                  onSurface: Colors.white,
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (selectedDate != null) {
+          onChanged(selectedDate);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: date != null ? AppTheme.primaryColor : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 18, color: Colors.white70),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                date != null ? Formatters.formatDate(date) : label,
+                style: TextStyle(
+                  color: date != null ? Colors.white : Colors.white54,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (date != null)
+              GestureDetector(
+                onTap: () {
+                  onChanged(null);
+                  setModalState(() {});
+                  setState(() {});
+                },
+                child: const Icon(Icons.clear, size: 18, color: Colors.white54),
+              ),
           ],
         ),
       ),
