@@ -27,15 +27,16 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final dashboardAsync = ref.watch(dashboardProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('Analytics'),
+        title: Text('Analytics', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -45,7 +46,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error: $error', style: const TextStyle(color: Colors.white)),
+              Text('Error: $error', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               ElevatedButton(
                 onPressed: () => ref.read(dashboardProvider.notifier).refresh(),
                 child: const Text('Retry'),
@@ -62,9 +63,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSummaryCards(dashboard),
+                _buildSummaryCards(dashboard, isDarkMode),
                 const SizedBox(height: 24),
-                _buildIncomeExpenseChart(dashboard),
+                _buildIncomeExpenseChart(dashboard, isDarkMode),
                 const SizedBox(height: 24),
                 transactionsAsync.when(
                   loading: () => const SizedBox(),
@@ -72,7 +73,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   data: (transactions) {
                     // Pre-compute pie chart data once
                     _computePieChartData(transactions);
-                    return _buildCategoryPieChart();
+                    return _buildCategoryPieChart(isDarkMode);
                   },
                 ),
               ],
@@ -203,26 +204,26 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     }).toList();
   }
 
-  Widget _buildSummaryCards(DashboardData dashboard) {
+  Widget _buildSummaryCards(DashboardData dashboard, bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text('Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildIncomeCard(dashboard.totalIncome)),
+            Expanded(child: _buildIncomeCard(dashboard.totalIncome, isDarkMode)),
             const SizedBox(width: 12),
-            Expanded(child: _buildExpenseCard(dashboard.totalExpenses)),
+            Expanded(child: _buildExpenseCard(dashboard.totalExpenses, isDarkMode)),
           ],
         ),
         const SizedBox(height: 12),
-        _buildSavingsCard(dashboard.totalIncome, dashboard.totalExpenses),
+        _buildSavingsCard(dashboard.totalIncome, dashboard.totalExpenses, isDarkMode),
       ],
     );
   }
 
-  Widget _buildIncomeCard(double totalIncome) {
+  Widget _buildIncomeCard(double totalIncome, bool isDarkMode) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -237,19 +238,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             child: const Icon(Icons.arrow_downward, color: AppTheme.incomeColor),
           ),
           const SizedBox(height: 12),
-          const Text('Total Income', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Text('Total Income', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 12)),
           const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(Formatters.formatCurrency(totalIncome), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text(Formatters.formatCurrency(totalIncome), style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor, fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildExpenseCard(double totalExpenses) {
+  Widget _buildExpenseCard(double totalExpenses, bool isDarkMode) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -264,19 +265,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             child: const Icon(Icons.arrow_upward, color: AppTheme.expenseColor),
           ),
           const SizedBox(height: 12),
-          const Text('Total Expenses', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Text('Total Expenses', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 12)),
           const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(Formatters.formatCurrency(totalExpenses), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text(Formatters.formatCurrency(totalExpenses), style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor, fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSavingsCard(double totalIncome, double totalExpenses) {
+  Widget _buildSavingsCard(double totalIncome, double totalExpenses, bool isDarkMode) {
     final netSavings = totalIncome - totalExpenses;
     final savingsRate = totalIncome == 0 ? 0.0 : ((totalIncome - totalExpenses) / totalIncome * 100);
     
@@ -289,7 +290,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Net Savings', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text('Net Savings', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 14)),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
@@ -328,7 +329,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     return AppTheme.errorColor;
   }
 
-  Widget _buildIncomeExpenseChart(DashboardData dashboard) {
+  Widget _buildIncomeExpenseChart(DashboardData dashboard, bool isDarkMode) {
     final monthlyData = dashboard.monthlyData;
     
     return GlassCard(
@@ -336,10 +337,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Income vs Expenses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text('Income vs Expenses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
           const SizedBox(height: 24),
           if (monthlyData.isEmpty)
-            const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No data available', style: TextStyle(color: Colors.white70))))
+            Center(child: Padding(padding: const EdgeInsets.all(40), child: Text('No data available', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor))))
           else
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
@@ -359,7 +360,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                           if (index >= 0 && index < monthlyData.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
-                              child: Text(monthlyData[index].month.substring(5), style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                              child: Text(monthlyData[index].month.substring(5), style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 10)),
                             );
                           }
                           return const Text('');
@@ -383,9 +384,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem('Income', AppTheme.incomeColor),
+                _buildLegendItem('Income', AppTheme.incomeColor, isDarkMode),
                 const SizedBox(width: 24),
-                _buildLegendItem('Expenses', AppTheme.expenseColor),
+                _buildLegendItem('Expenses', AppTheme.expenseColor, isDarkMode),
               ],
             ),
           ),
@@ -394,21 +395,21 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color color, bool isDarkMode) {
     return Row(
       children: [
         Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        Text(label, style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildCategoryPieChart() {
+  Widget _buildCategoryPieChart(bool isDarkMode) {
     if (_pieSections == null || _pieSections!.isEmpty) {
       return GlassCard(
         padding: const EdgeInsets.all(20),
-        child: Center(child: Text('No expense data available', style: TextStyle(color: Colors.white.withOpacity(0.7)))),
+        child: Center(child: Text('No expense data available', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor))),
       );
     }
 
@@ -417,7 +418,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Expense by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text('Expense by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
           const SizedBox(height: 24),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 200),

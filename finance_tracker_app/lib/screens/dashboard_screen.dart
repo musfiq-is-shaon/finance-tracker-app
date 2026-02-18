@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 import '../utils/formatters.dart';
@@ -22,8 +23,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Load dashboard data after first frame is rendered
-    // Auth validation is now completed in main.dart before navigating here
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -41,9 +40,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(dashboardProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       body: SafeArea(
         child: dashboardAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -51,7 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Error: $error', style: const TextStyle(color: Colors.white)),
+                Text('Error: $error', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
                 ElevatedButton(
                   onPressed: () => ref.read(dashboardProvider.notifier).refresh(),
                   child: const Text('Retry'),
@@ -69,17 +69,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(isDarkMode),
                   const SizedBox(height: 24),
-                  _buildBalanceCard(dashboard),
+                  _buildBalanceCard(dashboard, isDarkMode),
                   const SizedBox(height: 24),
-                  _buildQuickActions(),
+                  _buildQuickActions(isDarkMode),
                   const SizedBox(height: 24),
-                  _buildStatsRow(dashboard),
+                  _buildStatsRow(dashboard, isDarkMode),
                   const SizedBox(height: 24),
-                  _buildMonthlyChart(dashboard),
+                  _buildMonthlyChart(dashboard, isDarkMode),
                   const SizedBox(height: 24),
-                  _buildRecentTransactions(dashboard),
+                  _buildRecentTransactions(dashboard, isDarkMode),
                 ],
               ),
             ),
@@ -87,7 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddOptions(context),
+        onPressed: () => _showAddOptions(context, isDarkMode),
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -111,6 +111,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               break;
           }
         },
+        backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: isDarkMode ? Colors.grey : Colors.grey.shade600,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Transactions'),
@@ -122,8 +125,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    // Get user's name from AuthService
+  Widget _buildHeader(bool isDarkMode) {
     final userName = AuthService.getCurrentUserName();
     final displayName = userName?.isNotEmpty == true ? userName! : 'User';
 
@@ -137,15 +139,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               'Hello, $displayName!',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withOpacity(0.7),
+                color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
               ),
             ),
-            const Text(
+            Text(
               'Finance Tracker',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
               ),
             ),
           ],
@@ -153,8 +155,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           children: [
             IconButton(
+              onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
+              icon: Icon(
+                isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
               onPressed: () => context.push('/ai-assistant'),
-              icon: const Icon(Icons.smart_toy, color: AppTheme.secondaryColor),
+              icon: Icon(Icons.smart_toy, color: isDarkMode ? AppTheme.secondaryColor : AppTheme.primaryColor),
             ),
             const SizedBox(width: 8),
             GestureDetector(
@@ -177,7 +187,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBalanceCard(DashboardData dashboard) {
+  Widget _buildBalanceCard(DashboardData dashboard, bool isDarkMode) {
     return GlassCard(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -186,11 +196,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Balance',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white70,
+                  color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                 ),
               ),
               Container(
@@ -215,10 +225,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               Formatters.formatCurrency(dashboard.totalBalance),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
               ),
             ),
           ),
@@ -226,21 +236,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildBalanceItem(
-                  'Income',
-                  dashboard.totalIncome,
-                  AppTheme.incomeColor,
-                  Icons.arrow_downward,
-                ),
+                child: _buildBalanceItem('Income', dashboard.totalIncome, AppTheme.incomeColor, Icons.arrow_downward, isDarkMode),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildBalanceItem(
-                  'Expense',
-                  dashboard.totalExpenses,
-                  AppTheme.expenseColor,
-                  Icons.arrow_upward,
-                ),
+                child: _buildBalanceItem('Expense', dashboard.totalExpenses, AppTheme.expenseColor, Icons.arrow_upward, isDarkMode),
               ),
             ],
           ),
@@ -249,7 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBalanceItem(String label, double amount, Color color, IconData icon) {
+  Widget _buildBalanceItem(String label, double amount, Color color, IconData icon, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -275,7 +275,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
+                    color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -284,10 +284,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     Formatters.formatCurrency(amount),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                     ),
                   ),
                 ),
@@ -299,46 +299,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
           ),
         ),
         const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
-              child: _buildActionButton(
-                'Add Income',
-                AppTheme.incomeColor,
-                Icons.add_circle,
-                () => context.push('/add-transaction', extra: 'income'),
-              ),
+              child: _buildActionButton('Add Income', AppTheme.incomeColor, Icons.add_circle, () => context.push('/add-transaction', extra: 'income'), isDarkMode),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton(
-                'Add Expense',
-                AppTheme.expenseColor,
-                Icons.remove_circle,
-                () => context.push('/add-transaction', extra: 'expense'),
-              ),
+              child: _buildActionButton('Add Expense', AppTheme.expenseColor, Icons.remove_circle, () => context.push('/add-transaction', extra: 'expense'), isDarkMode),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton(
-                'Add Loan',
-                AppTheme.primaryColor,
-                Icons.account_balance,
-                () => context.push('/add-loan', extra: 'given'),
-              ),
+              child: _buildActionButton('Add Loan', AppTheme.primaryColor, Icons.account_balance, () => context.push('/add-loan', extra: 'given'), isDarkMode),
             ),
           ],
         ),
@@ -346,7 +331,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildActionButton(String label, Color color, IconData icon, VoidCallback onTap) {
+  Widget _buildActionButton(String label, Color color, IconData icon, VoidCallback onTap, bool isDarkMode) {
     return GlassCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -356,9 +341,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white,
+              color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -367,7 +352,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildStatsRow(DashboardData dashboard) {
+  Widget _buildStatsRow(DashboardData dashboard, bool isDarkMode) {
     return Row(
       children: [
         Expanded(
@@ -378,22 +363,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 const Icon(Icons.arrow_forward, color: AppTheme.loanGivenColor),
                 const SizedBox(height: 8),
-                const Text(
-                  'Loan Given',
-                  style: TextStyle(fontSize: 12, color: Colors.white70),
-                ),
+                Text('Loan Given', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    Formatters.formatCurrency(dashboard.loanGiven),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Text(Formatters.formatCurrency(dashboard.loanGiven), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
                 ),
               ],
             ),
@@ -408,22 +383,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 const Icon(Icons.arrow_back, color: AppTheme.loanBorrowedColor),
                 const SizedBox(height: 8),
-                const Text(
-                  'Loan Borrowed',
-                  style: TextStyle(fontSize: 12, color: Colors.white70),
-                ),
+                Text('Loan Borrowed', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    Formatters.formatCurrency(dashboard.loanBorrowed),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Text(Formatters.formatCurrency(dashboard.loanBorrowed), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
                 ),
               ],
             ),
@@ -433,17 +398,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildMonthlyChart(DashboardData dashboard) {
+  Widget _buildMonthlyChart(DashboardData dashboard, bool isDarkMode) {
     final monthlyData = dashboard.monthlyData;
     if (monthlyData.isEmpty) {
       return GlassCard(
         padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            'No data available',
-            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-          ),
-        ),
+        child: Center(child: Text('No data available', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor))),
       );
     }
 
@@ -452,14 +412,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Monthly Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          Text('Monthly Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
           const SizedBox(height: 24),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 200),
@@ -477,13 +430,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         if (value.toInt() >= 0 && value.toInt() < monthlyData.length) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              monthlyData[value.toInt()].month.substring(5),
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
-                              ),
-                            ),
+                            child: Text(monthlyData[value.toInt()].month.substring(5), style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 10)),
                           );
                         }
                         return const Text('');
@@ -500,24 +447,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   return BarChartGroupData(
                     x: entry.key,
                     barRods: [
-                      BarChartRodData(
-                        toY: entry.value.expense,
-                        color: AppTheme.expenseColor,
-                        width: 12,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          topRight: Radius.circular(4),
-                        ),
-                      ),
-                      BarChartRodData(
-                        toY: entry.value.income,
-                        color: AppTheme.incomeColor,
-                        width: 12,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          topRight: Radius.circular(4),
-                        ),
-                      ),
+                      BarChartRodData(toY: entry.value.expense, color: AppTheme.expenseColor, width: 12, borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4))),
+                      BarChartRodData(toY: entry.value.income, color: AppTheme.incomeColor, width: 12, borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4))),
                     ],
                   );
                 }).toList(),
@@ -530,9 +461,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem('Income', AppTheme.incomeColor),
+                _buildLegendItem('Income', AppTheme.incomeColor, isDarkMode),
                 const SizedBox(width: 24),
-                _buildLegendItem('Expense', AppTheme.expenseColor),
+                _buildLegendItem('Expense', AppTheme.expenseColor, isDarkMode),
               ],
             ),
           ),
@@ -550,27 +481,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return max > 0 ? max : 100;
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color color, bool isDarkMode) {
     return Row(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
+        Text(label, style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor, fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildRecentTransactions(DashboardData dashboard) {
+  Widget _buildRecentTransactions(DashboardData dashboard, bool isDarkMode) {
     final recentTx = dashboard.recentTransactions;
     
     return GlassCard(
@@ -581,47 +502,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recent Transactions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               TextButton(
                 onPressed: () => context.push('/transactions'),
-                child: const Text(
-                  'See All',
-                  style: TextStyle(color: AppTheme.primaryColor),
-                ),
+                child: const Text('See All', style: TextStyle(color: AppTheme.primaryColor)),
               ),
             ],
           ),
           if (recentTx.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  'No transactions yet',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                ),
-              ),
+              child: Center(child: Text('No transactions yet', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor))),
             )
           else
-            ...recentTx.take(5).map((tx) => _buildTransactionItem(tx)),
+            ...recentTx.take(5).map((tx) => _buildTransactionItem(tx, isDarkMode)),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(Map<String, dynamic> tx) {
+  Widget _buildTransactionItem(Map<String, dynamic> tx, bool isDarkMode) {
     final isIncome = tx['type'] == 'income';
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -633,34 +539,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               color: (isIncome ? AppTheme.incomeColor : AppTheme.expenseColor).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-              color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-            ),
+            child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  tx['category'] ?? 'Unknown',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(tx['category'] ?? 'Unknown', style: TextStyle(fontWeight: FontWeight.w600, color: isDarkMode ? Colors.white : AppTheme.lightTextColor), overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(
-                  tx['description'] ?? '',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
+                Text(tx['description'] ?? '', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor), overflow: TextOverflow.ellipsis, maxLines: 1),
               ],
             ),
           ),
@@ -669,13 +557,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
-              child: Text(
-                '${isIncome ? '+' : '-'}${Formatters.formatCurrency((tx['amount'] as num).toDouble())}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-                ),
-              ),
+              child: Text('${isIncome ? '+' : '-'}${Formatters.formatCurrency((tx['amount'] as num).toDouble())}', style: TextStyle(fontWeight: FontWeight.bold, color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor)),
             ),
           ),
         ],
@@ -683,103 +565,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  void _showAddOptions(BuildContext context) {
+  void _showAddOptions(BuildContext context, bool isDarkMode) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
-            const Text(
-              'Add New',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            Text('Add New', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
             const SizedBox(height: 24),
-            _buildOptionTile(
-              'Income',
-              'Add money received',
-              AppTheme.incomeColor,
-              Icons.arrow_downward,
-              () {
-                Navigator.pop(context);
-                context.push('/add-transaction', extra: 'income');
-              },
-            ),
-            _buildOptionTile(
-              'Expense',
-              'Add money spent',
-              AppTheme.expenseColor,
-              Icons.arrow_upward,
-              () {
-                Navigator.pop(context);
-                context.push('/add-transaction', extra: 'expense');
-              },
-            ),
-            _buildOptionTile(
-              'Loan Given',
-              'Money you lent',
-              AppTheme.loanGivenColor,
-              Icons.arrow_forward,
-              () {
-                Navigator.pop(context);
-                context.push('/add-loan', extra: 'given');
-              },
-            ),
-            _buildOptionTile(
-              'Loan Borrowed',
-              'Money you owe',
-              AppTheme.loanBorrowedColor,
-              Icons.arrow_back,
-              () {
-                Navigator.pop(context);
-                context.push('/add-loan', extra: 'borrowed');
-              },
-            ),
+            _buildOptionTile('Income', 'Add money received', AppTheme.incomeColor, Icons.arrow_downward, () { Navigator.pop(context); context.push('/add-transaction', extra: 'income'); }, isDarkMode),
+            _buildOptionTile('Expense', 'Add money spent', AppTheme.expenseColor, Icons.arrow_upward, () { Navigator.pop(context); context.push('/add-transaction', extra: 'expense'); }, isDarkMode),
+            _buildOptionTile('Loan Given', 'Money you lent', AppTheme.loanGivenColor, Icons.arrow_forward, () { Navigator.pop(context); context.push('/add-loan', extra: 'given'); }, isDarkMode),
+            _buildOptionTile('Loan Borrowed', 'Money you owe', AppTheme.loanBorrowedColor, Icons.arrow_back, () { Navigator.pop(context); context.push('/add-loan', extra: 'borrowed'); }, isDarkMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOptionTile(
-    String title,
-    String subtitle,
-    Color color,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
+  Widget _buildOptionTile(String title, String subtitle, Color color, IconData icon, VoidCallback onTap, bool isDarkMode) {
     return ListTile(
       onTap: onTap,
-      leading: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.7))),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+      leading: Container(width: 48, height: 48, decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color)),
+      title: Text(title, style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
+      trailing: Icon(Icons.chevron_right, color: isDarkMode ? Colors.white54 : Colors.grey),
     );
   }
 }

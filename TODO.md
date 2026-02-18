@@ -1,28 +1,22 @@
-# TODO - Contact Picker Feature Implementation
+# Plan: Add Light Mode with Toggle Button
 
-## Plan Status: IN PROGRESS
+## Status: COMPLETE ✅
 
-### 1. Database Schema Update
-- [x] Add `phone_number` column to loans table in supabase_schema.sql
+## Features Added:
+1. Light/Dark mode toggle with persistent preference
+2. Theme toggle button on dashboard header
+3. Theme-aware glass cards and screens
+4. Transaction cards now show both date and description
 
-### 2. Backend Update
-- [x] Modify loan_routes.py to accept and store phone_number
-
-### 3. Loan Model Update
-- [x] Add phoneNumber field to loan.dart
-
-### 4. Loan Provider Update
-- [x] Modify loan_provider.dart to include phone number
-
-### 5. Android Manifest Update
-- [x] Add READ_CONTACTS permission
-
-### 6. pubspec.yaml Update
-- [x] Add flutter_contacts package
-
-### 7. Add Loan Screen Update
-- [x] Add phone number field with contact picker
-
-### 8. Loan List Screen Update
-- [x] Display phone number in loan item
+## Files Edited:
+1. `app_theme.dart` - Added light theme colors and ThemeData
+2. `theme_provider.dart` - New provider for theme state management
+3. `main.dart` - Theme initialization and dynamic theme application
+4. `glass_card.dart` - Theme-aware widget
+5. `dashboard_screen.dart` - Toggle button and theme-aware colors
+6. `profile_screen.dart` - Theme-aware colors
+7. `transaction_history_screen.dart` - Added dates to transaction cards + theme-aware
+8. `loan_list_screen.dart` - Full names now shown (no truncation) + theme-aware
+9. `category_provider.dart` - New provider for custom categories (NEW)
+10. `add_transaction_screen.dart` - Add new category feature + theme-aware
 

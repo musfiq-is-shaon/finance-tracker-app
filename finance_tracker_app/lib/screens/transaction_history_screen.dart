@@ -33,18 +33,19 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   @override
   Widget build(BuildContext context) {
     final transactionsAsync = ref.watch(transactionsProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Text('Transactions', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
             onPressed: () => _showFilterDialog(context),
           ),
         ],
@@ -55,7 +56,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error: $error', style: const TextStyle(color: Colors.white)),
+              Text('Error: $error', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               ElevatedButton(
                 onPressed: () => ref.read(transactionsProvider.notifier).loadTransactions(),
                 child: const Text('Retry'),
@@ -77,11 +78,11 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long, size: 80, color: Colors.white.withOpacity(0.3)),
+                  Icon(Icons.receipt_long, size: 80, color: isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3)),
                   const SizedBox(height: 16),
                   Text(
                     'No transactions found',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 18),
+                    style: TextStyle(color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor, fontSize: 18),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -117,6 +118,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
 
   Widget _buildTransactionItem(tx) {
     final isIncome = tx.type == 'income';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Dismissible(
       key: Key(tx.id),
       direction: DismissDirection.endToStart,
@@ -130,13 +132,13 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
         return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: AppTheme.cardColor,
-            title: const Text('Delete Transaction', style: TextStyle(color: Colors.white)),
-            content: const Text('Are you sure you want to delete this transaction?', style: TextStyle(color: Colors.white70)),
+            backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+            title: Text('Delete Transaction', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+            content: Text('Are you sure you want to delete this transaction?', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -174,22 +176,33 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                 children: [
                   Text(
                     tx.category,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.white,
+                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  if (tx.description.isNotEmpty) ...[
+                    Text(
+                      tx.description,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 2),
+                  ],
                   Text(
-                    tx.description.isNotEmpty ? tx.description : Formatters.formatDate(tx.date),
+                    Formatters.formatDate(tx.date),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
+                      color: isDarkMode ? Colors.white.withOpacity(0.5) : AppTheme.lightSubTextColor,
+                      fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
                   ),
                 ],
               ),
@@ -213,9 +226,10 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
   }
 
   void _showFilterDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardColor,
+      backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -236,12 +250,12 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Filter Transactions',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                       ),
                     ),
                     TextButton(
@@ -255,34 +269,34 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                         setState(() {});
                         Navigator.pop(context);
                       },
-                      child: const Text('Clear'),
+                      child: Text('Clear', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('Type', style: TextStyle(color: Colors.white70)),
+                Text('Type', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: [
-                    _buildFilterChip('all', 'All', setModalState),
-                    _buildFilterChip('income', 'Income', setModalState),
-                    _buildFilterChip('expense', 'Expense', setModalState),
+                    _buildFilterChip('all', 'All', setModalState, isDarkMode),
+                    _buildFilterChip('income', 'Income', setModalState, isDarkMode),
+                    _buildFilterChip('expense', 'Expense', setModalState, isDarkMode),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text('Category', style: TextStyle(color: Colors.white70)),
+                Text('Category', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildCategoryChip(null, 'All', setModalState),
-                    ...Constants.expenseCategories.map((c) => _buildCategoryChip(c, c, setModalState)),
+                    _buildCategoryChip(null, 'All', setModalState, isDarkMode),
+                    ...Constants.expenseCategories.map((c) => _buildCategoryChip(c, c, setModalState, isDarkMode)),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text('Date Range', style: TextStyle(color: Colors.white70)),
+                Text('Date Range', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -296,6 +310,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                           setState(() {});
                         },
                         setModalState,
+                        isDarkMode,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -309,6 +324,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                           setState(() {});
                         },
                         setModalState,
+                        isDarkMode,
                       ),
                     ),
                   ],
@@ -338,6 +354,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     DateTime? date,
     Function(DateTime?) onChanged,
     StateSetter setModalState,
+    bool isDarkMode,
   ) {
     return GestureDetector(
       onTap: () async {
@@ -349,12 +366,19 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.dark(
-                  primary: AppTheme.primaryColor,
-                  onPrimary: Colors.white,
-                  surface: AppTheme.cardColor,
-                  onSurface: Colors.white,
-                ),
+                colorScheme: isDarkMode
+                    ? const ColorScheme.dark(
+                        primary: AppTheme.primaryColor,
+                        onPrimary: Colors.white,
+                        surface: AppTheme.darkCardColor,
+                        onSurface: Colors.white,
+                      )
+                    : const ColorScheme.light(
+                        primary: AppTheme.primaryColor,
+                        onPrimary: Colors.white,
+                        surface: AppTheme.lightCardColor,
+                        onSurface: AppTheme.lightTextColor,
+                      ),
               ),
               child: child!,
             );
@@ -367,7 +391,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: date != null ? AppTheme.primaryColor : Colors.transparent,
@@ -375,13 +399,13 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, size: 18, color: Colors.white70),
+            Icon(Icons.calendar_today, size: 18, color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 date != null ? Formatters.formatDate(date) : label,
                 style: TextStyle(
-                  color: date != null ? Colors.white : Colors.white54,
+                  color: date != null ? (isDarkMode ? Colors.white : AppTheme.lightTextColor) : (isDarkMode ? Colors.white54 : Colors.grey),
                   fontSize: 14,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -394,7 +418,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                   setModalState(() {});
                   setState(() {});
                 },
-                child: const Icon(Icons.clear, size: 18, color: Colors.white54),
+                child: Icon(Icons.clear, size: 18, color: isDarkMode ? Colors.white54 : Colors.grey),
               ),
           ],
         ),
@@ -402,7 +426,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     );
   }
 
-  Widget _buildFilterChip(String value, String label, StateSetter setModalState) {
+  Widget _buildFilterChip(String value, String label, StateSetter setModalState, bool isDarkMode) {
     final isSelected = _filterType == value;
     return GestureDetector(
       onTap: () {
@@ -412,18 +436,18 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white.withOpacity(0.1),
+          color: isSelected ? AppTheme.primaryColor : (isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
-          style: TextStyle(color: isSelected ? Colors.white : Colors.white70),
+          style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryChip(String? value, String label, StateSetter setModalState) {
+  Widget _buildCategoryChip(String? value, String label, StateSetter setModalState, bool isDarkMode) {
     final isSelected = _selectedCategory == value;
     return GestureDetector(
       onTap: () {
@@ -433,12 +457,12 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white.withOpacity(0.1),
+          color: isSelected ? AppTheme.primaryColor : (isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1)),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
-          style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 12),
+          style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor), fontSize: 12),
         ),
       ),
     );

@@ -38,29 +38,34 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     final loansAsync = ref.watch(loansProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('Loans'),
+        title: Text('Loans', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
             onPressed: () => _showFilterDialog(context),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primaryColor,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: 'Given'),
-            Tab(text: 'Borrowed'),
+          labelColor: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+          unselectedLabelColor: isDarkMode ? Colors.white54 : AppTheme.lightSubTextColor,
+          tabs: [
+            Tab(
+              child: Text('Given', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+            ),
+            Tab(
+              child: Text('Borrowed', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+            ),
           ],
         ),
       ),
@@ -70,7 +75,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error: $error', style: const TextStyle(color: Colors.white)),
+              Text('Error: $error', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               ElevatedButton(
                 onPressed: () => ref.read(loansProvider.notifier).loadLoans(),
                 child: const Text('Retry'),
@@ -92,8 +97,8 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildLoanList(givenLoans, 'given'),
-              _buildLoanList(borrowedLoans, 'borrowed'),
+              _buildLoanList(givenLoans, 'given', isDarkMode),
+              _buildLoanList(borrowedLoans, 'borrowed', isDarkMode),
             ],
           );
         },
@@ -105,7 +110,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
     );
   }
 
-  Widget _buildLoanList(List loans, String type) {
+  Widget _buildLoanList(List loans, String type, bool isDarkMode) {
     if (loans.isEmpty) {
       return Center(
         child: Column(
@@ -114,12 +119,12 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
             Icon(
               Icons.account_balance,
               size: 80,
-              color: Colors.white.withOpacity(0.3),
+              color: isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'No ${type == 'given' ? 'loans given' : 'loans borrowed'}',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 18),
+              style: TextStyle(color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor, fontSize: 18),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -139,13 +144,13 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
         padding: const EdgeInsets.all(16),
         itemCount: loans.length,
         itemBuilder: (context, index) {
-          return _buildLoanItem(loans[index]);
+          return _buildLoanItem(loans[index], isDarkMode);
         },
       ),
     );
   }
 
-  Widget _buildLoanItem(loan) {
+  Widget _buildLoanItem(loan, bool isDarkMode) {
     final isGiven = loan.type == 'given';
     final color = isGiven ? AppTheme.loanGivenColor : AppTheme.loanBorrowedColor;
     
@@ -162,13 +167,13 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
         return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: AppTheme.cardColor,
-            title: const Text('Delete Loan', style: TextStyle(color: Colors.white)),
-            content: const Text('Are you sure you want to delete this loan?', style: TextStyle(color: Colors.white70)),
+            backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+            title: Text('Delete Loan', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+            content: Text('Are you sure you want to delete this loan?', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -209,12 +214,13 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                     children: [
                       Text(
                         loan.personName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: Colors.white,
+                          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        overflow: TextOverflow.visible,
                       ),
                       if (loan.phoneNumber != null && loan.phoneNumber!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -223,14 +229,14 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                             Icon(
                               Icons.phone,
                               size: 14,
-                              color: Colors.white.withOpacity(0.7),
+                              color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 loan.phoneNumber!,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                                   fontSize: 14,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -243,7 +249,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                       Text(
                         Formatters.formatDate(loan.date),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                           fontSize: 14,
                         ),
                       ),
@@ -267,7 +273,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                         Text(
                           'Paid: ${Formatters.formatCurrency(loan.paidAmount!)}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -282,7 +288,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: isDarkMode ? Colors.white.withOpacity(0.05) : AppTheme.lightBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -290,7 +296,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                   children: [
                     Text(
                       'Outstanding:',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style: TextStyle(color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor),
                     ),
                     Text(
                       Formatters.formatCurrency(loan.outstandingAmount),
@@ -341,27 +347,29 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
 
   void _showPayDialog(BuildContext context, loan) {
     final amountController = TextEditingController(text: loan.outstandingAmount.toString());
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardColor,
-        title: const Text('Mark as Paid', style: TextStyle(color: Colors.white)),
+        backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+        title: Text('Mark as Paid', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Enter the amount paid:',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+              decoration: InputDecoration(
                 prefixText: '৳ ',
                 hintText: 'Amount',
+                hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
               ),
             ),
           ],
@@ -369,7 +377,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -388,9 +396,10 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
   }
 
   void _showAddLoanOptions(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardColor,
+      backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -409,8 +418,8 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                 ),
                 child: const Icon(Icons.arrow_forward, color: AppTheme.loanGivenColor),
               ),
-              title: const Text('Loan Given', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Money you lent to someone', style: TextStyle(color: Colors.white70)),
+              title: Text('Loan Given', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+              subtitle: Text('Money you lent to someone', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
               onTap: () {
                 Navigator.pop(context);
                 context.push('/add-loan', extra: 'given');
@@ -426,8 +435,8 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                 ),
                 child: const Icon(Icons.arrow_back, color: AppTheme.loanBorrowedColor),
               ),
-              title: const Text('Loan Borrowed', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Money you owe to someone', style: TextStyle(color: Colors.white70)),
+              title: Text('Loan Borrowed', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+              subtitle: Text('Money you owe to someone', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
               onTap: () {
                 Navigator.pop(context);
                 context.push('/add-loan', extra: 'borrowed');
@@ -440,9 +449,10 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
   }
 
   void _showFilterDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardColor,
+      backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -463,12 +473,12 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Filter Loans',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                       ),
                     ),
                     TextButton(
@@ -480,12 +490,12 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                         setState(() {});
                         Navigator.pop(context);
                       },
-                      child: const Text('Clear'),
+                      child: Text('Clear', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('Date Range', style: TextStyle(color: Colors.white70)),
+                Text('Date Range', style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -499,6 +509,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                           setState(() {});
                         },
                         setModalState,
+                        isDarkMode,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -512,6 +523,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                           setState(() {});
                         },
                         setModalState,
+                        isDarkMode,
                       ),
                     ),
                   ],
@@ -541,6 +553,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
     DateTime? date,
     Function(DateTime?) onChanged,
     StateSetter setModalState,
+    bool isDarkMode,
   ) {
     return GestureDetector(
       onTap: () async {
@@ -552,12 +565,19 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.dark(
-                  primary: AppTheme.primaryColor,
-                  onPrimary: Colors.white,
-                  surface: AppTheme.cardColor,
-                  onSurface: Colors.white,
-                ),
+                colorScheme: isDarkMode
+                    ? const ColorScheme.dark(
+                        primary: AppTheme.primaryColor,
+                        onPrimary: Colors.white,
+                        surface: AppTheme.darkCardColor,
+                        onSurface: Colors.white,
+                      )
+                    : const ColorScheme.light(
+                        primary: AppTheme.primaryColor,
+                        onPrimary: Colors.white,
+                        surface: AppTheme.lightCardColor,
+                        onSurface: AppTheme.lightTextColor,
+                      ),
               ),
               child: child!,
             );
@@ -570,7 +590,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: date != null ? AppTheme.primaryColor : Colors.transparent,
@@ -578,13 +598,13 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, size: 18, color: Colors.white70),
+            Icon(Icons.calendar_today, size: 18, color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 date != null ? Formatters.formatDate(date) : label,
                 style: TextStyle(
-                  color: date != null ? Colors.white : Colors.white54,
+                  color: date != null ? (isDarkMode ? Colors.white : AppTheme.lightTextColor) : (isDarkMode ? Colors.white54 : Colors.grey),
                   fontSize: 14,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -597,7 +617,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                   setModalState(() {});
                   setState(() {});
                 },
-                child: const Icon(Icons.clear, size: 18, color: Colors.white54),
+                child: Icon(Icons.clear, size: 18, color: isDarkMode ? Colors.white54 : Colors.grey),
               ),
           ],
         ),

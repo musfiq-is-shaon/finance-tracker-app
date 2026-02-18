@@ -3,10 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 import 'services/auth_service.dart';
+import 'providers/theme_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
   
   // Initialize AuthService first
   await AuthService.init();
@@ -15,7 +20,14 @@ void main() async {
   await Permission.contacts.status;
   
   // Run the app with a provider scope
-  runApp(const ProviderScope(child: FinanceTrackerApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const FinanceTrackerApp(),
+    ),
+  );
 }
 
 class FinanceTrackerApp extends ConsumerStatefulWidget {
@@ -51,12 +63,15 @@ class _FinanceTrackerAppState extends ConsumerState<FinanceTrackerApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch theme state
+    final isDarkMode = ref.watch(themeProvider);
+    
     // If auth is not yet initialized, show splash
     if (!_isAuthInitialized) {
       return MaterialApp(
         title: 'Finance Tracker',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
         home: const _SplashScreen(),
       );
     }
@@ -65,7 +80,7 @@ class _FinanceTrackerAppState extends ConsumerState<FinanceTrackerApp> {
     return MaterialApp.router(
       title: 'Finance Tracker',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       routerConfig: ref.watch(routerProvider),
     );
   }
@@ -77,8 +92,10 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -108,12 +125,12 @@ class _SplashScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Finance Tracker',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
               ),
             ),
             const SizedBox(height: 48),

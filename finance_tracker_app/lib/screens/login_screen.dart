@@ -84,8 +84,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -113,12 +115,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Welcome Back!',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -127,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   'Sign in to continue',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.7),
+                    color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -135,10 +137,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                  decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined, color: Colors.white54),
+                    labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                    prefixIcon: Icon(Icons.email_outlined, color: isDarkMode ? Colors.white54 : Colors.grey),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -154,14 +157,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outlined, color: Colors.white54),
+                    labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                    prefixIcon: Icon(Icons.lock_outlined, color: isDarkMode ? Colors.white54 : Colors.grey),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white54,
+                        color: isDarkMode ? Colors.white54 : Colors.grey,
                       ),
                       onPressed: () {
                         setState(() => _obscurePassword = !_obscurePassword);
@@ -198,7 +202,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style: TextStyle(color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/signup'),

@@ -6,20 +6,26 @@ import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/glass_card.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
+  Widget build(BuildContext context) {
     final userName = AuthService.getCurrentUserName();
     final displayName = userName ?? 'User';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text('Profile', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -48,17 +54,17 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               displayName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Tap to edit profile',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
               ),
             ),
             const SizedBox(height: 40),
@@ -154,6 +160,7 @@ class ProfileScreen extends ConsumerWidget {
     required String title,
     required VoidCallback onTap,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       onTap: onTap,
       leading: Container(
@@ -167,18 +174,19 @@ class ProfileScreen extends ConsumerWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
           fontWeight: FontWeight.w500,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+      trailing: Icon(Icons.chevron_right, color: isDarkMode ? Colors.white54 : Colors.grey),
     );
   }
 
   Widget _buildDivider() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Divider(
-      color: Colors.white.withOpacity(0.1),
+      color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
       height: 1,
     );
   }

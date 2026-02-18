@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../utils/constants.dart';
+import '../providers/category_provider.dart';
 import '../widgets/glass_card.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -31,9 +31,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   void initState() {
     super.initState();
     _type = widget.transactionType ?? 'expense';
-    _selectedCategory = _type == 'income' 
-        ? Constants.incomeCategories.first 
-        : Constants.expenseCategories.first;
   }
 
   @override
@@ -43,113 +40,32 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppTheme.primaryColor,
-              surface: AppTheme.cardColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
-  }
-
-  Future<void> _saveTransaction() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    // Check balance for expenses
-    if (_type == 'expense') {
-      final amount = double.tryParse(_amountController.text) ?? 0;
-      if (amount > _currentBalance) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-        return;
-      }
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      await ref.read(transactionsProvider.notifier).addTransaction(
-        type: _type,
-        amount: double.parse(_amountController.text),
-        category: _selectedCategory,
-        description: _descriptionController.text,
-        date: _selectedDate,
-      );
-      
-      // Invalidate and refresh dashboard to ensure all screens have updated data
-      ref.invalidate(dashboardProvider);
-      await ref.read(dashboardProvider.notifier).refresh();
-      
-      // Invalidate balance provider to get fresh balance
-      ref.invalidate(balanceProvider);
-      
-      // Force reload transactions to ensure consistency across all screens
-      ref.invalidate(transactionsProvider);
-      await ref.read(transactionsProvider.notifier).loadTransactions();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaction added successfully'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage = 'Error: $e';
-        // Check if it's an insufficient balance error from backend
-        if (e.toString().contains('Insufficient balance')) {
-          errorMessage = 'Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Watch the balance provider to get real-time updates
-    final balanceAsync = ref.watch(balanceProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
+    // Get categories based on transaction type
     final categories = _type == 'income' 
-        ? Constants.incomeCategories 
-        : Constants.expenseCategories;
+        ? ref.watch(incomeCategoriesProvider)
+        : ref.watch(expenseCategoriesProvider);
+    
+    // Set default category if not set
+    if (_selectedCategory.isEmpty && categories.isNotEmpty) {
+      _selectedCategory = categories.first;
+    }
+
+    // Watch the balance provider
+    final balanceAsync = ref.watch(balanceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: Text('Add ${_type == 'income' ? 'Income' : 'Expense'}'),
+        title: Text(
+          'Add ${_type == 'income' ? 'Income' : 'Expense'}',
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -170,23 +86,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Available Balance',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                           ),
                         ),
                         balanceAsync.when(
                           data: (balance) {
-                            // Update _currentBalance for validation purposes
                             _currentBalance = balance;
                             return Text(
                               '৳${balance.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                               ),
                             );
                           },
@@ -197,10 +112,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           ),
                           error: (_, __) => Text(
                             '৳${_currentBalance.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                             ),
                           ),
                         ),
@@ -215,22 +130,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Transaction Type',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
-                          child: _buildTypeButton('income', 'Income', AppTheme.incomeColor),
+                          child: _buildTypeButton('income', 'Income', AppTheme.incomeColor, isDarkMode),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _buildTypeButton('expense', 'Expense', AppTheme.expenseColor),
+                          child: _buildTypeButton('expense', 'Expense', AppTheme.expenseColor, isDarkMode),
                         ),
                       ],
                     ),
@@ -243,21 +158,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Amount',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _amountController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                       ),
                       decoration: InputDecoration(
                         prefixText: '৳ ',
@@ -270,7 +185,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         hintStyle: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white.withOpacity(0.3),
+                          color: isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
                         ),
                         border: InputBorder.none,
                       ),
@@ -282,7 +197,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         if (amount == null || amount <= 0) {
                           return 'Please enter a valid amount';
                         }
-                        // Additional validation for expenses
                         if (_type == 'expense' && amount > _currentBalance) {
                           return 'Insufficient balance';
                         }
@@ -298,12 +212,43 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Category',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Category',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                          ),
+                        ),
+                        // Add new category button
+                        GestureDetector(
+                          onTap: () => _showAddCategoryDialog(context, isDarkMode),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Add New',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -318,20 +263,40 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             decoration: BoxDecoration(
                               color: isSelected 
                                   ? AppTheme.primaryColor 
-                                  : Colors.white.withOpacity(0.1),
+                                  : (isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1)),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected 
                                     ? AppTheme.primaryColor 
-                                    : Colors.white.withOpacity(0.2),
+                                    : (isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.2)),
                               ),
                             ),
-                            child: Text(
-                              category,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                                // Show delete icon for custom categories
+                                if (_type == 'income' 
+                                    ? ref.read(incomeCategoriesProvider.notifier).isCustomCategory(category)
+                                    : ref.read(expenseCategoriesProvider.notifier).isCustomCategory(category))
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: GestureDetector(
+                                      onTap: () => _deleteCategory(category, isDarkMode),
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 14,
+                                        color: isSelected ? Colors.white : Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         );
@@ -346,11 +311,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Date',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -367,13 +332,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       ),
                       title: Text(
                         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                      onTap: _selectDate,
+                      trailing: Icon(Icons.chevron_right, color: isDarkMode ? Colors.white54 : Colors.grey),
+                      onTap: () => _selectDate(isDarkMode),
                     ),
                   ],
                 ),
@@ -384,20 +349,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Description (Optional)',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                      decoration: InputDecoration(
                         hintText: 'Add a note...',
+                        hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
                         border: InputBorder.none,
                       ),
                     ),
@@ -435,15 +401,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
-  Widget _buildTypeButton(String type, String label, Color color) {
+  Widget _buildTypeButton(String type, String label, Color color, bool isDarkMode) {
     final isSelected = _type == type;
     return GestureDetector(
       onTap: () {
         setState(() {
           _type = type;
-          _selectedCategory = type == 'income' 
-              ? Constants.incomeCategories.first 
-              : Constants.expenseCategories.first;
+          _selectedCategory = '';
         });
       },
       child: Container(
@@ -452,7 +416,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.2),
+            color: isSelected ? color : (isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.3)),
             width: 2,
           ),
         ),
@@ -462,11 +426,179 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _selectDate(bool isDarkMode) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppTheme.primaryColor,
+              surface: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  void _showAddCategoryDialog(BuildContext context, bool isDarkMode) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+        title: Text(
+          'Add New Category',
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+          decoration: InputDecoration(
+            hintText: 'Category name',
+            hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                if (_type == 'income') {
+                  ref.read(incomeCategoriesProvider.notifier).addCategory(name);
+                } else {
+                  ref.read(expenseCategoriesProvider.notifier).addCategory(name);
+                }
+                setState(() => _selectedCategory = name);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCategory(String category, bool isDarkMode) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+        title: Text(
+          'Delete Category',
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$category"?',
+          style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_type == 'income') {
+                ref.read(incomeCategoriesProvider.notifier).removeCategory(category);
+              } else {
+                ref.read(expenseCategoriesProvider.notifier).removeCategory(category);
+              }
+              if (_selectedCategory == category) {
+                setState(() => _selectedCategory = '');
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveTransaction() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Check balance for expenses
+    if (_type == 'expense') {
+      final amount = double.tryParse(_amountController.text) ?? 0;
+      if (amount > _currentBalance) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(transactionsProvider.notifier).addTransaction(
+        type: _type,
+        amount: double.parse(_amountController.text),
+        category: _selectedCategory,
+        description: _descriptionController.text,
+        date: _selectedDate,
+      );
+      
+      ref.invalidate(dashboardProvider);
+      await ref.read(dashboardProvider.notifier).refresh();
+      ref.invalidate(balanceProvider);
+      ref.invalidate(transactionsProvider);
+      await ref.read(transactionsProvider.notifier).loadTransactions();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction added successfully'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error: $e';
+        if (e.toString().contains('Insufficient balance')) {
+          errorMessage = 'Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }
 

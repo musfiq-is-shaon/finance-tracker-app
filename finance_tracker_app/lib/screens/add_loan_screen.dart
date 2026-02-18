@@ -45,6 +45,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   }
 
   Future<void> _selectDate() async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -53,9 +54,9 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: ColorScheme.dark(
               primary: AppTheme.primaryColor,
-              surface: AppTheme.cardColor,
+              surface: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
             ),
           ),
           child: child!,
@@ -68,25 +69,20 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   }
 
   Future<void> _pickContact() async {
-    // First, explicitly check and request permission to ensure the Android popup appears
     var status = await Permission.contacts.status;
     
     if (status.isDenied) {
-      // Request permission - this WILL show the Android system popup
       status = await Permission.contacts.request();
     }
     
     if (status.isGranted) {
-      // Permission granted, proceed to pick contact
       try {
         final contact = await FlutterContacts.openExternalPick();
         if (contact != null) {
-          // Get full contact details including phone numbers
           final fullContact = await FlutterContacts.getContact(contact.id, withProperties: true);
           if (fullContact != null && mounted) {
             setState(() {
               _nameController.text = fullContact.displayName;
-              // Get the first phone number if available
               if (fullContact.phones.isNotEmpty) {
                 _phoneController.text = fullContact.phones.first.number;
               }
@@ -104,27 +100,26 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
         }
       }
     } else {
-      // Permission was denied or permanently denied
       _showPermissionDeniedDialog();
     }
   }
 
   void _showPermissionDeniedDialog() {
     if (mounted) {
-      // Show dialog to open settings
+      final isDarkMode = Theme.of(context).brightness == Brightness.dark;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppTheme.cardColor,
-          title: const Text('Permission Required', style: TextStyle(color: Colors.white)),
-          content: const Text(
+          backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+          title: Text('Permission Required', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+          content: Text(
             'Contact permission is required to pick contacts. Please enable it in app settings.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -142,7 +137,6 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   Future<void> _saveLoan() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Check balance for "loan given"
     if (_type == 'given') {
       final amount = double.tryParse(_amountController.text) ?? 0;
       if (amount > _currentBalance) {
@@ -168,14 +162,9 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
         date: _selectedDate,
       );
       
-      // Invalidate and refresh dashboard to ensure all screens have updated data
       ref.invalidate(dashboardProvider);
       await ref.read(dashboardProvider.notifier).refresh();
-      
-      // Invalidate balance provider to get fresh balance
       ref.invalidate(balanceProvider);
-      
-      // Force reload loans to ensure consistency across all screens
       ref.invalidate(loansProvider);
       await ref.read(loansProvider.notifier).loadLoans();
       
@@ -191,7 +180,6 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
     } catch (e) {
       if (mounted) {
         String errorMessage = 'Error: $e';
-        // Check if it's an insufficient balance error from backend
         if (e.toString().contains('Insufficient balance')) {
           errorMessage = 'Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}';
         }
@@ -211,15 +199,18 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the balance provider to get real-time updates
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final balanceAsync = ref.watch(balanceProvider);
-    
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: Text('Add ${_type == 'given' ? 'Loan Given' : 'Loan Borrowed'}'),
+        title: Text(
+          'Add ${_type == 'given' ? 'Loan Given' : 'Loan Borrowed'}',
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -240,23 +231,22 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Available Balance',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                           ),
                         ),
                         balanceAsync.when(
                           data: (balance) {
-                            // Update _currentBalance for validation purposes
                             _currentBalance = balance;
                             return Text(
                               '৳${balance.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                               ),
                             );
                           },
@@ -267,10 +257,10 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           ),
                           error: (_, __) => Text(
                             '৳${_currentBalance.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                             ),
                           ),
                         ),
@@ -285,22 +275,22 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Loan Type',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
-                          child: _buildTypeButton('given', 'Loan Given', AppTheme.loanGivenColor),
+                          child: _buildTypeButton('given', 'Loan Given', AppTheme.loanGivenColor, isDarkMode),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _buildTypeButton('borrowed', 'Loan Borrowed', AppTheme.loanBorrowedColor),
+                          child: _buildTypeButton('borrowed', 'Loan Borrowed', AppTheme.loanBorrowedColor, isDarkMode),
                         ),
                       ],
                     ),
@@ -316,14 +306,13 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Person Name',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                           ),
                         ),
-                        // Contact Picker Button
                         TextButton.icon(
                           onPressed: _pickContact,
                           icon: const Icon(Icons.contacts, size: 18),
@@ -337,10 +326,11 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                      decoration: InputDecoration(
                         hintText: 'Enter name',
-                        prefixIcon: Icon(Icons.person, color: Colors.white54),
+                        hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
+                        prefixIcon: Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -358,21 +348,22 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Phone Number (Optional)',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                      decoration: InputDecoration(
                         hintText: 'Enter phone number',
-                        prefixIcon: Icon(Icons.phone, color: Colors.white54),
+                        hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
+                        prefixIcon: Icon(Icons.phone, color: isDarkMode ? Colors.white54 : Colors.grey),
                       ),
                     ),
                   ],
@@ -384,21 +375,21 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Amount',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _amountController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                       ),
                       decoration: InputDecoration(
                         prefixText: '৳ ',
@@ -411,7 +402,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         hintStyle: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white.withOpacity(0.3),
+                          color: isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
                         ),
                         border: InputBorder.none,
                       ),
@@ -423,7 +414,6 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         if (amount == null || amount <= 0) {
                           return 'Please enter a valid amount';
                         }
-                        // Additional validation for loan given
                         if (_type == 'given' && amount > _currentBalance) {
                           return 'Insufficient balance';
                         }
@@ -439,11 +429,11 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Date',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -460,12 +450,12 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                       ),
                       title: Text(
                         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                      trailing: Icon(Icons.chevron_right, color: isDarkMode ? Colors.white54 : Colors.grey),
                       onTap: _selectDate,
                     ),
                   ],
@@ -477,20 +467,21 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Description (Optional)',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                      decoration: InputDecoration(
                         hintText: 'Add a note...',
+                        hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
                         border: InputBorder.none,
                       ),
                     ),
@@ -528,7 +519,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
     );
   }
 
-  Widget _buildTypeButton(String type, String label, Color color) {
+  Widget _buildTypeButton(String type, String label, Color color, bool isDarkMode) {
     final isSelected = _type == type;
     return GestureDetector(
       onTap: () {
@@ -542,7 +533,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.2),
+            color: isSelected ? color : (isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.3)),
             width: 2,
           ),
         ),
@@ -552,7 +543,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
           ),
         ),
       ),

@@ -45,12 +45,14 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('AI Financial Assistant'),
+        title: Text('AI Financial Assistant', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -81,7 +83,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -90,14 +92,14 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'AI-powered insights for your finances',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                             fontSize: 12,
                           ),
                         ),
@@ -109,14 +111,14 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
             ),
             const SizedBox(height: 24),
             if (_isLoading)
-              const Center(
+              Center(
                 child: Column(
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
                     Text(
                       'Analyzing your finances...',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
                     ),
                   ],
                 ),
@@ -129,7 +131,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Failed to get advice',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -143,12 +145,12 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Your Financial Insights',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -157,16 +159,16 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.lightbulb, color: AppTheme.warningColor),
-                            SizedBox(width: 8),
+                            const Icon(Icons.lightbulb, color: AppTheme.warningColor),
+                            const SizedBox(width: 8),
                             Text(
                               'Advice',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                               ),
                             ),
                           ],
@@ -174,8 +176,8 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                         const SizedBox(height: 16),
                         Text(
                           _advice!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                             fontSize: 16,
                             height: 1.5,
                           ),
@@ -184,12 +186,12 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Tips for Better Finances',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -197,21 +199,25 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     icon: Icons.savings,
                     title: 'Track Every Expense',
                     description: 'Keep track of all your expenses to understand your spending patterns.',
+                    isDarkMode: isDarkMode,
                   ),
                   _buildTipCard(
                     icon: Icons.account_balance_wallet,
                     title: 'Set a Budget',
                     description: 'Create a monthly budget and stick to it for better financial health.',
+                    isDarkMode: isDarkMode,
                   ),
                   _buildTipCard(
                     icon: Icons.trending_up,
                     title: 'Save Regularly',
                     description: 'Aim to save at least 20% of your income each month.',
+                    isDarkMode: isDarkMode,
                   ),
                   _buildTipCard(
                     icon: Icons.insights,
                     title: 'Review Monthly',
                     description: 'Review your finances monthly to stay on track with your goals.',
+                    isDarkMode: isDarkMode,
                   ),
                 ],
               ),
@@ -234,6 +240,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
     required IconData icon,
     required String title,
     required String description,
+    required bool isDarkMode,
   }) {
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 12),
@@ -256,16 +263,16 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                     fontSize: 12,
                   ),
                 ),

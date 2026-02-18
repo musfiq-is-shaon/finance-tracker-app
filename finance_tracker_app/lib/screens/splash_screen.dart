@@ -53,8 +53,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -91,12 +93,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Finance Tracker',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -104,7 +106,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       'Track your finances with ease',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.7),
+                        color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                       ),
                     ),
                     const SizedBox(height: 48),
