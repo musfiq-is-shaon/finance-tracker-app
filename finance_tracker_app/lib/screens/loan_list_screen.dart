@@ -16,7 +16,6 @@ class LoanListScreen extends ConsumerStatefulWidget {
 
 class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _hasLoadedData = false;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -26,18 +25,8 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
     _tabController = TabController(length: 2, vsync: this);
     // Load loans after first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+      ref.read(loansProvider.notifier).loadLoans();
     });
-  }
-
-  Future<void> _loadData() async {
-    if (_hasLoadedData) return;
-    _hasLoadedData = true;
-    // Add a small delay to ensure auth is fully validated
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      await ref.read(loansProvider.notifier).loadLoans();
-    }
   }
 
   @override

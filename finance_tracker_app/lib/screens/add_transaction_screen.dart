@@ -26,7 +26,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   double _currentBalance = 0.0;
-  bool _isCheckingBalance = true;
 
   @override
   void initState() {
@@ -35,25 +34,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     _selectedCategory = _type == 'income' 
         ? Constants.incomeCategories.first 
         : Constants.expenseCategories.first;
-    _loadBalance();
-  }
-
-  Future<void> _loadBalance() async {
-    try {
-      final balanceData = await ref.read(balanceProvider.future);
-      if (mounted) {
-        setState(() {
-          _currentBalance = balanceData;
-          _isCheckingBalance = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isCheckingBalance = false;
-        });
-      }
-    }
   }
 
   @override
@@ -114,8 +94,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         date: _selectedDate,
       );
       
-      // Refresh both providers to ensure all screens have updated data
+      // Invalidate and refresh dashboard to ensure all screens have updated data
+      ref.invalidate(dashboardProvider);
       await ref.read(dashboardProvider.notifier).refresh();
+      
+      // Invalidate balance provider to get fresh balance
+      ref.invalidate(balanceProvider);
+      
+      // Force reload transactions to ensure consistency across all screens
+      ref.invalidate(transactionsProvider);
       await ref.read(transactionsProvider.notifier).loadTransactions();
       
       if (mounted) {
@@ -150,6 +137,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch the balance provider to get real-time updates
+    final balanceAsync = ref.watch(balanceProvider);
+    
     final categories = _type == 'income' 
         ? Constants.incomeCategories 
         : Constants.expenseCategories;
@@ -187,20 +177,33 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                             color: Colors.white70,
                           ),
                         ),
-                        _isCheckingBalance
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
-                              )
-                            : Text(
-                                '৳${_currentBalance.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                        balanceAsync.when(
+                          data: (balance) {
+                            // Update _currentBalance for validation purposes
+                            _currentBalance = balance;
+                            return Text(
+                              '৳${balance.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
+                            );
+                          },
+                          loading: () => const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+                          ),
+                          error: (_, __) => Text(
+                            '৳${_currentBalance.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
