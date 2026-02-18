@@ -6,17 +6,13 @@ class Constants {
   // Base URL for the backend API
   // Use 10.0.2.2 for Android emulator to connect to host's localhost
   // Use 127.0.0.1 for iOS simulator
-  // For production, use your deployed backend URL
-  // Example: https://your-app.onrender.com
+  // For local development, use http://localhost:5001 or 10.0.2.2:5001 for Android
   static String get baseUrl {
-    if (kDebugMode) {
-      // Debug mode - use local emulator
-      return 'http://10.0.2.2:5001';
-    } else {
-      // Release mode - use production backend
-      // TODO: Replace with your Render backend URL
-      return 'https://finance-tracker-app-draft01.onrender.com';
-    }
+    // Always use local backend
+    // For Android emulator: 10.0.2.2
+    // For iOS simulator: 127.0.0.1
+    // For physical device: use your computer's local IP address
+    return 'http://10.0.2.2:5001';
   }
   
   // Supabase Configuration

@@ -32,21 +32,16 @@ class _FinanceTrackerAppState extends ConsumerState<FinanceTrackerApp> {
   }
 
   Future<void> _initializeAuth() async {
-    // Perform the auth check and wait for it to complete
-    // This validates the token with the server
-    final isLoggedIn = await AuthService.isLoggedIn();
+    // Disable auto login - always require manual login
+    // Set auth as initialized but not valid (force login screen)
     if (mounted) {
       setState(() {
         _isAuthInitialized = true;
-        _isAuthValid = isLoggedIn;
+        _isAuthValid = false;
       });
       
-      // Navigate based on auth state using the router
-      if (isLoggedIn) {
-        ref.read(routerProvider).go('/dashboard');
-      } else {
-        ref.read(routerProvider).go('/login');
-      }
+      // Always navigate to login screen
+      ref.read(routerProvider).go('/login');
     }
   }
 
