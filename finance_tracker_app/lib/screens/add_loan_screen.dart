@@ -68,10 +68,16 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   }
 
   Future<void> _pickContact() async {
-    // Request contacts permission
-    var status = await Permission.contacts.request();
+    // First, explicitly check and request permission to ensure the Android popup appears
+    var status = await Permission.contacts.status;
+    
+    if (status.isDenied) {
+      // Request permission - this WILL show the Android system popup
+      status = await Permission.contacts.request();
+    }
     
     if (status.isGranted) {
+      // Permission granted, proceed to pick contact
       try {
         final contact = await FlutterContacts.openExternalPick();
         if (contact != null) {
@@ -97,43 +103,39 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
           );
         }
       }
-    } else if (status.isDenied) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Contact permission denied'),
-            backgroundColor: AppTheme.errorColor,
+    } else {
+      // Permission was denied or permanently denied
+      _showPermissionDeniedDialog();
+    }
+  }
+
+  void _showPermissionDeniedDialog() {
+    if (mounted) {
+      // Show dialog to open settings
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.cardColor,
+          title: const Text('Permission Required', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'Contact permission is required to pick contacts. Please enable it in app settings.',
+            style: TextStyle(color: Colors.white70),
           ),
-        );
-      }
-    } else if (status.isPermanentlyDenied) {
-      if (mounted) {
-        // Show dialog to open settings
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: AppTheme.cardColor,
-            title: const Text('Permission Required', style: TextStyle(color: Colors.white)),
-            content: const Text(
-              'Contact permission is permanently denied. Please enable it in app settings to use this feature.',
-              style: TextStyle(color: Colors.white70),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  openAppSettings();
-                },
-                child: const Text('Open Settings'),
-              ),
-            ],
-          ),
-        );
-      }
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

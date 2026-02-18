@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 import 'services/auth_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize AuthService first
   await AuthService.init();
+  
+  // Initialize permission handler - check current permission status
+  await Permission.contacts.status;
   
   // Run the app with a provider scope
   runApp(const ProviderScope(child: FinanceTrackerApp()));
