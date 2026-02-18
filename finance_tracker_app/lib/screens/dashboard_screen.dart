@@ -205,12 +205,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            Formatters.formatCurrency(dashboard.totalBalance),
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              Formatters.formatCurrency(dashboard.totalBalance),
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -258,25 +262,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
                 ),
-              ),
-              Text(
-                Formatters.formatCurrency(amount),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Formatters.formatCurrency(amount),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -366,12 +377,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   'Loan Given',
                   style: TextStyle(fontSize: 12, color: Colors.white70),
                 ),
-                Text(
-                  Formatters.formatCurrency(dashboard.loanGiven),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Formatters.formatCurrency(dashboard.loanGiven),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -391,12 +407,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   'Loan Borrowed',
                   style: TextStyle(fontSize: 12, color: Colors.white70),
                 ),
-                Text(
-                  Formatters.formatCurrency(dashboard.loanBorrowed),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Formatters.formatCurrency(dashboard.loanBorrowed),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -435,8 +456,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -499,13 +520,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Income', AppTheme.incomeColor),
-              const SizedBox(width: 24),
-              _buildLegendItem('Expense', AppTheme.expenseColor),
-            ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildLegendItem('Income', AppTheme.incomeColor),
+                const SizedBox(width: 24),
+                _buildLegendItem('Expense', AppTheme.expenseColor),
+              ],
+            ),
           ),
         ],
       ),
@@ -620,22 +644,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
                   tx['description'] ?? '',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withOpacity(0.7),
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
           ),
-          Text(
-            '${isIncome ? '+' : '-'}${Formatters.formatCurrency((tx['amount'] as num).toDouble())}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+          const SizedBox(width: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${isIncome ? '+' : '-'}${Formatters.formatCurrency((tx['amount'] as num).toDouble())}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                ),
+              ),
             ),
           ),
         ],

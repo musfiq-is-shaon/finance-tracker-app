@@ -239,7 +239,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           const SizedBox(height: 12),
           const Text('Total Income', style: TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 4),
-          Text(Formatters.formatCurrency(totalIncome), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(Formatters.formatCurrency(totalIncome), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -262,7 +266,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           const SizedBox(height: 12),
           const Text('Total Expenses', style: TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 4),
-          Text(Formatters.formatCurrency(totalExpenses), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(Formatters.formatCurrency(totalExpenses), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -277,20 +285,26 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Net Savings', style: TextStyle(color: Colors.white70, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text(
-                Formatters.formatCurrency(netSavings),
-                style: TextStyle(
-                  color: netSavings >= 0 ? AppTheme.successColor : AppTheme.errorColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Net Savings', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Formatters.formatCurrency(netSavings),
+                    style: TextStyle(
+                      color: netSavings >= 0 ? AppTheme.successColor : AppTheme.errorColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -327,8 +341,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           if (monthlyData.isEmpty)
             const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No data available', style: TextStyle(color: Colors.white70))))
           else
-            SizedBox(
-              height: 200,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
               child: LineChart(
                 LineChartData(
                   gridData: const FlGridData(show: false),
@@ -364,13 +378,16 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               ),
             ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Income', AppTheme.incomeColor),
-              const SizedBox(width: 24),
-              _buildLegendItem('Expenses', AppTheme.expenseColor),
-            ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildLegendItem('Income', AppTheme.incomeColor),
+                const SizedBox(width: 24),
+                _buildLegendItem('Expenses', AppTheme.expenseColor),
+              ],
+            ),
           ),
         ],
       ),
@@ -402,8 +419,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
         children: [
           const Text('Expense by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
             child: PieChart(
               PieChartData(
                 pieTouchData: PieTouchData(

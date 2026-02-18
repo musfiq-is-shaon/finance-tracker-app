@@ -225,6 +225,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                           fontSize: 18,
                           color: Colors.white,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (loan.phoneNumber != null && loan.phoneNumber!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -236,11 +237,14 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                               color: Colors.white.withOpacity(0.7),
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              loan.phoneNumber!,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 14,
+                            Expanded(
+                              child: Text(
+                                loan.phoneNumber!,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -257,26 +261,30 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      Formatters.formatCurrency(loan.amount),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: color,
-                      ),
-                    ),
-                    if (loan.paidAmount != null && loan.paidAmount! > 0)
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
                       Text(
-                        'Paid: ${Formatters.formatCurrency(loan.paidAmount!)}',
+                        Formatters.formatCurrency(loan.amount),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: color,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
+                      if (loan.paidAmount != null && loan.paidAmount! > 0)
+                        Text(
+                          'Paid: ${Formatters.formatCurrency(loan.paidAmount!)}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -363,7 +371,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
-                prefixText: '\$ ',
+                prefixText: '৳ ',
                 hintText: 'Amount',
               ),
             ),

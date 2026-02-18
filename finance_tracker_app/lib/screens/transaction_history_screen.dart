@@ -190,6 +190,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                       fontSize: 16,
                       color: Colors.white,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -198,16 +199,22 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                       color: Colors.white.withOpacity(0.7),
                       fontSize: 14,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ],
               ),
             ),
-            Text(
-              '${isIncome ? '+' : '-'}${Formatters.formatCurrency(tx.amount)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                '${isIncome ? '+' : '-'}${Formatters.formatCurrency(tx.amount)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

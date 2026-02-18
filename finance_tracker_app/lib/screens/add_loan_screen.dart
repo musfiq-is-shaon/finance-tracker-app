@@ -166,7 +166,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       if (amount > _currentBalance) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Insufficient balance! You have \$${_currentBalance.toStringAsFixed(2)}'),
+            content: Text('Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -202,7 +202,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
         String errorMessage = 'Error: $e';
         // Check if it's an insufficient balance error from backend
         if (e.toString().contains('Insufficient balance')) {
-          errorMessage = 'Insufficient balance! You have \$${_currentBalance.toStringAsFixed(2)}';
+          errorMessage = 'Insufficient balance! You have ৳${_currentBalance.toStringAsFixed(2)}';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -260,7 +260,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
                               )
                             : Text(
-                                '\$${_currentBalance.toStringAsFixed(2)}',
+                                '৳${_currentBalance.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -394,7 +394,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         color: Colors.white,
                       ),
                       decoration: InputDecoration(
-                        prefixText: '\$ ',
+                        prefixText: '৳ ',
                         prefixStyle: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
