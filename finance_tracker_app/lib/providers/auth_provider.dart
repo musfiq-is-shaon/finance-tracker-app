@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
+import 'dashboard_provider.dart';
+import 'transaction_provider.dart';
+import 'loan_provider.dart';
 
 // Use a simple provider that calls the auth service directly each time
 final authStateProvider = Provider<bool>((ref) {
@@ -54,6 +57,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     await AuthService.logout();
     // Invalidate auth state to ensure fresh check on next login
     _ref.invalidate(authCheckProvider);
+    // Invalidate all data providers to clear cached data for the new user
+    _ref.invalidate(balanceProvider);
+    _ref.invalidate(dashboardProvider);
+    _ref.invalidate(transactionsProvider);
+    _ref.invalidate(loansProvider);
     state = const AsyncValue.data(null);
   }
 }
