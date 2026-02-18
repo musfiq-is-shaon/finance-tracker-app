@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/loan_provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -18,6 +20,7 @@ class AddLoanScreen extends ConsumerStatefulWidget {
 class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   
@@ -55,6 +58,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -83,6 +87,76 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
     }
   }
 
+  Future<void> _pickContact() async {
+    // Request contacts permission
+    var status = await Permission.contacts.request();
+    
+    if (status.isGranted) {
+      try {
+        final contact = await FlutterContacts.openExternalPick();
+        if (contact != null) {
+          // Get full contact details including phone numbers
+          final fullContact = await FlutterContacts.getContact(contact.id, withProperties: true);
+          if (fullContact != null && mounted) {
+            setState(() {
+              _nameController.text = fullContact.displayName;
+              // Get the first phone number if available
+              if (fullContact.phones.isNotEmpty) {
+                _phoneController.text = fullContact.phones.first.number;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error picking contact: $e'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      }
+    } else if (status.isDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contact permission denied'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } else if (status.isPermanentlyDenied) {
+      if (mounted) {
+        // Show dialog to open settings
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppTheme.cardColor,
+            title: const Text('Permission Required', style: TextStyle(color: Colors.white)),
+            content: const Text(
+              'Contact permission is permanently denied. Please enable it in app settings to use this feature.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _saveLoan() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -106,6 +180,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       await ref.read(loansProvider.notifier).addLoan(
         type: _type,
         personName: _nameController.text,
+        phoneNumber: _phoneController.text.isNotEmpty ? _phoneController.text : null,
         amount: double.parse(_amountController.text),
         description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
         date: _selectedDate,
@@ -231,12 +306,26 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Person Name',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Person Name',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        // Contact Picker Button
+                        TextButton.icon(
+                          onPressed: _pickContact,
+                          icon: const Icon(Icons.contacts, size: 18),
+                          label: const Text('Pick Contact'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -252,6 +341,32 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         }
                         return null;
                       },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Phone Number (Optional)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Enter phone number',
+                        prefixIcon: Icon(Icons.phone, color: Colors.white54),
+                      ),
                     ),
                   ],
                 ),

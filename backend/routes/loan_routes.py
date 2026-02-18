@@ -86,6 +86,7 @@ def add_loan():
         'user_id': user_id,
         'type': loan_type,
         'person_name': data.get('person_name'),
+        'phone_number': data.get('phone_number'),
         'amount': amount,
         'paid_amount': data.get('paid_amount'),
         'description': data.get('description'),

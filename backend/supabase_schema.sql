@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.loans (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     type TEXT NOT NULL CHECK (type IN ('given', 'borrowed')),
     person_name TEXT NOT NULL,
+    phone_number TEXT,
     amount DECIMAL(15, 2) NOT NULL,
     paid_amount DECIMAL(15, 2) DEFAULT 0,
     description TEXT,

@@ -1,17 +1,28 @@
-# Fix Plan: Auto-login Token Validation Issue
+# TODO - Contact Picker Feature Implementation
 
-## Task
-Fix the auto-login issue where the app doesn't load user data after app restart, and add transaction/loan shows server error.
+## Plan Status: IN PROGRESS
 
-## Steps to Complete
+### 1. Database Schema Update
+- [x] Add `phone_number` column to loans table in supabase_schema.sql
 
-1. [x] Fix `auth_service.dart` - Improve token validation logic
-   - Add proper retry mechanism for cold start
-   - Don't return true on network errors blindly
-   - Properly handle token expiration
+### 2. Backend Update
+- [x] Modify loan_routes.py to accept and store phone_number
 
-2. [ ] Rebuild the APK to test the fix
+### 3. Loan Model Update
+- [x] Add phoneNumber field to loan.dart
 
-## Status: Ready for Testing
+### 4. Loan Provider Update
+- [x] Modify loan_provider.dart to include phone number
 
+### 5. Android Manifest Update
+- [x] Add READ_CONTACTS permission
+
+### 6. pubspec.yaml Update
+- [x] Add flutter_contacts package
+
+### 7. Add Loan Screen Update
+- [x] Add phone number field with contact picker
+
+### 8. Loan List Screen Update
+- [x] Display phone number in loan item
 

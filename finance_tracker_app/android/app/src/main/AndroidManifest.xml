@@ -2,6 +2,9 @@
     <!-- Required for network communication -->
     <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- Required for reading contacts to select loan borrower/giver -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    
     <application
         android:label="finance_tracker_app"
         android:name="${applicationName}"

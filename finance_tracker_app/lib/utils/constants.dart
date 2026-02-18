@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 
 class Constants {
   static const String appName = 'Finance Tracker';

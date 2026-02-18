@@ -23,6 +23,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<Loan>>> {
   Future<void> addLoan({
     required String type,
     required String personName,
+    String? phoneNumber,
     required double amount,
     String? description,
     required DateTime date,
@@ -31,6 +32,7 @@ class LoansNotifier extends StateNotifier<AsyncValue<List<Loan>>> {
       await ApiService.addLoan({
         'type': type,
         'person_name': personName,
+        'phone_number': phoneNumber,
         'amount': amount,
         'description': description,
         'date': date.toIso8601String(),

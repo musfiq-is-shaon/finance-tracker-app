@@ -16,6 +16,8 @@ dependencies:
   http: ^1.1.0
   shared_preferences: ^2.2.2
   intl: ^0.18.1
+  flutter_contacts: ^1.1.7+1
+  permission_handler: ^11.1.0
 
 dev_dependencies:
   flutter_test:

@@ -226,6 +226,26 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                           color: Colors.white,
                         ),
                       ),
+                      if (loan.phoneNumber != null && loan.phoneNumber!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone,
+                              size: 14,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              loan.phoneNumber!,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Text(
                         Formatters.formatDate(loan.date),
