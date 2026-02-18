@@ -114,7 +114,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         date: _selectedDate,
       );
       
+      // Refresh both providers to ensure all screens have updated data
       await ref.read(dashboardProvider.notifier).refresh();
+      await ref.read(transactionsProvider.notifier).loadTransactions();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

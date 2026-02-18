@@ -186,7 +186,9 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
         date: _selectedDate,
       );
       
+      // Refresh both providers to ensure all screens have updated data
       await ref.read(dashboardProvider.notifier).refresh();
+      await ref.read(loansProvider.notifier).loadLoans();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
