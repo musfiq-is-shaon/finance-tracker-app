@@ -3,16 +3,41 @@ import 'package:flutter/foundation.dart';
 class Constants {
   static const String appName = 'Finance Tracker';
   
+  // ============================================================
+  // CONFIGURATION: Choose your connection method
+  // ============================================================
+  // Options: 
+  //   'emulator' - Android emulator (uses 10.0.2.2)
+  //   'usb'      - USB debugging (uses localhost - requires adb reverse)
+  //   'physical' - Physical device via WiFi (requires local IP)
+  static const String connectionMode = 'physical';  // <-- CHANGE THIS: 'emulator', 'usb', or 'physical'
+  
+  // For 'physical' mode only: your computer's local IP address
+  // Get it by running: ipconfig getifaddr en0 (on macOS)
+  // Or check: System Settings > Network > IP Address
+  static const String physicalDeviceIp = '192.168.68.117';  // <-- CHANGE THIS if using 'physical' mode
+  
+  // Port where your backend is running
+  static const int backendPort = 5001;
+  
   // Base URL for the backend API
-  // Use 10.0.2.2 for Android emulator to connect to host's localhost
-  // Use 127.0.0.1 for iOS simulator
-  // For local development, use http://localhost:5001 or 10.0.2.2:5001 for Android
+  // - 'emulator': 10.0.2.2 (Android emulator connects to host localhost)
+  // - 'usb': 127.0.0.1 (localhost - works with adb reverse)
+  // - 'physical': your local IP (for WiFi debugging)
   static String get baseUrl {
-    // Always use local backend
-    // For Android emulator: 10.0.2.2
-    // For iOS simulator: 127.0.0.1
-    // For physical device: use your computer's local IP address
-    return 'http://10.0.2.2:5001';
+    switch (connectionMode) {
+      case 'usb':
+        // For USB debugging: use localhost with adb reverse
+        // Run: adb reverse tcp:5001 tcp:5001
+        return 'http://127.0.0.1:$backendPort';
+      case 'physical':
+        // For physical device via WiFi
+        return 'http://$physicalDeviceIp:$backendPort';
+      case 'emulator':
+      default:
+        // For Android emulator
+        return 'http://10.0.2.2:$backendPort';
+    }
   }
   
   // Supabase Configuration
