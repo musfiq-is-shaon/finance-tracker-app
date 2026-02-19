@@ -231,11 +231,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                               color: AppTheme.primaryColor.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Text(
                                   'Add New',
                                   style: TextStyle(

@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;

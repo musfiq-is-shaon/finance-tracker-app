@@ -257,7 +257,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.people_outline, size: 48, color: Colors.grey),
+                          const Icon(Icons.people_outline, size: 48, color: Colors.grey),
                           const SizedBox(height: 16),
                           Text(
                             'No contacts yet',
@@ -731,7 +731,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
 
   Widget _buildContactToggle(bool isNew, String label, bool isDarkMode) {
     final isSelected = _isCreatingNewContact == isNew;
-    final color = AppTheme.primaryColor;
+    const color = AppTheme.primaryColor;
     return GestureDetector(
       onTap: () {
         setState(() {

@@ -210,7 +210,7 @@ class AppTheme {
           borderSide: const BorderSide(color: errorColor),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        hintStyle: TextStyle(color: lightSubTextColor),
+        hintStyle: const TextStyle(color: lightSubTextColor),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primaryColor,

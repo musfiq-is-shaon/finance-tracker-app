@@ -14,7 +14,7 @@ class Constants {
   // For 'physical' mode only: your computer's local IP address
   // Get it by running: ipconfig getifaddr en0 (on macOS)
   // Or check: System Settings > Network > IP Address
-  static const String physicalDeviceIp = '192.168.0.171';  // <-- CHANGE THIS if using 'physical' mode
+  static const String physicalDeviceIp = '192.168.68.102';  // <-- CHANGE THIS if using 'physical' mode
   
   // Port where your backend is running
   static const int backendPort = 5001;

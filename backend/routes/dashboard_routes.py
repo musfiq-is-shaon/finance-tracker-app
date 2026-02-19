@@ -115,16 +115,35 @@ def get_dashboard():
     tx_response = supabase.table('transactions').select('*').eq('user_id', user_id).execute()
     transactions = tx_response.data
     
-    # Monthly data
+    # Get loan activities for monthly loan data
+    activities_response = supabase.table('loan_activities').select('*').eq('user_id', user_id).execute()
+    loan_activities = activities_response.data
+    
+    # Get loan contacts count
+    contacts_response = supabase.table('loan_contacts').select('id').eq('user_id', user_id).execute()
+    loan_contacts_count = len(contacts_response.data)
+    
+    # Monthly data for transactions
     monthly_data = {}
     for t in transactions:
         month = t['date'][:7]  # YYYY-MM
         if month not in monthly_data:
-            monthly_data[month] = {'income': 0, 'expense': 0}
+            monthly_data[month] = {'income': 0, 'expense': 0, 'loan_given': 0, 'loan_borrowed': 0}
         if t['type'] == 'income':
             monthly_data[month]['income'] += t['amount']
         else:
             monthly_data[month]['expense'] += t['amount']
+    
+    # Monthly data for loan activities
+    for activity in loan_activities:
+        if activity.get('created_at'):
+            month = activity['created_at'][:7]  # YYYY-MM
+            if month not in monthly_data:
+                monthly_data[month] = {'income': 0, 'expense': 0, 'loan_given': 0, 'loan_borrowed': 0}
+            if activity['activity_type'] == 'given':
+                monthly_data[month]['loan_given'] += activity['amount']
+            elif activity['activity_type'] == 'borrowed':
+                monthly_data[month]['loan_borrowed'] += activity['amount']
     
     # Sort by month and take last 6 months
     sorted_months = sorted(monthly_data.keys())[-6:]
@@ -133,14 +152,52 @@ def get_dashboard():
     # Recent transactions (last 10)
     recent_transactions = sorted(transactions, key=lambda x: x['date'], reverse=True)[:10]
     
+    # Category-wise expense breakdown
+    expense_by_category = {}
+    income_by_category = {}
+    for t in transactions:
+        category = t.get('category', 'Other')
+        if t['type'] == 'expense':
+            expense_by_category[category] = expense_by_category.get(category, 0) + t['amount']
+        else:
+            income_by_category[category] = income_by_category.get(category, 0) + t['amount']
+    
+    # Transaction counts
+    total_transactions = len(transactions)
+    total_income_count = len([t for t in transactions if t['type'] == 'income'])
+    total_expense_count = len([t for t in transactions if t['type'] == 'expense'])
+    
+    # Average transaction values
+    avg_income = balance_data['total_income'] / total_income_count if total_income_count > 0 else 0
+    avg_expense = balance_data['total_expenses'] / total_expense_count if total_expense_count > 0 else 0
+    
+    # Loan activity counts
+    total_loan_activities = len(loan_activities)
+    total_given_count = len([a for a in loan_activities if a['activity_type'] == 'given'])
+    total_borrowed_count = len([a for a in loan_activities if a['activity_type'] == 'borrowed'])
+    
     return jsonify({
         'total_balance': balance_data['total_balance'],
         'total_income': balance_data['total_income'],
         'total_expenses': balance_data['total_expenses'],
         'loan_given': balance_data['outstanding_given'],
         'loan_borrowed': balance_data['outstanding_borrowed'],
+        'total_loan_given': balance_data['loan_given'],
+        'total_loan_borrowed': balance_data['loan_borrowed'],
         'monthly_data': monthly_list,
-        'recent_transactions': recent_transactions
+        'recent_transactions': recent_transactions,
+        # Additional analytics data
+        'expense_by_category': expense_by_category,
+        'income_by_category': income_by_category,
+        'loan_contacts_count': loan_contacts_count,
+        'total_transactions': total_transactions,
+        'total_income_count': total_income_count,
+        'total_expense_count': total_expense_count,
+        'avg_income': avg_income,
+        'avg_expense': avg_expense,
+        'total_loan_activities': total_loan_activities,
+        'total_given_count': total_given_count,
+        'total_borrowed_count': total_borrowed_count,
     }), 200
 
 

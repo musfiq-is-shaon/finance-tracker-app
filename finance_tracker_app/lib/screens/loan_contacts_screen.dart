@@ -292,8 +292,8 @@ class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> with Wi
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => context.push('/loan-contact/${contact.id}', extra: 'give'),
-                    icon: Icon(Icons.arrow_forward, size: 16, color: AppTheme.loanGivenColor),
-                    label: Text('Give', style: TextStyle(color: AppTheme.loanGivenColor, fontSize: 12)),
+                    icon: const Icon(Icons.arrow_forward, size: 16, color: AppTheme.loanGivenColor),
+                    label: const Text('Give', style: TextStyle(color: AppTheme.loanGivenColor, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppTheme.loanGivenColor.withOpacity(0.5)),
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -304,8 +304,8 @@ class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> with Wi
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => context.push('/loan-contact/${contact.id}', extra: 'borrow'),
-                    icon: Icon(Icons.arrow_back, size: 16, color: AppTheme.loanBorrowedColor),
-                    label: Text('Borrow', style: TextStyle(color: AppTheme.loanBorrowedColor, fontSize: 12)),
+                    icon: const Icon(Icons.arrow_back, size: 16, color: AppTheme.loanBorrowedColor),
+                    label: const Text('Borrow', style: TextStyle(color: AppTheme.loanBorrowedColor, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppTheme.loanBorrowedColor.withOpacity(0.5)),
                       padding: const EdgeInsets.symmetric(vertical: 8),
