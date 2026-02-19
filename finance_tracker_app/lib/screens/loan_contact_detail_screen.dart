@@ -529,6 +529,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
                 // Force reload contacts
                 ref.read(loanContactsProvider.notifier).loadContacts();
                 ref.read(dashboardProvider.notifier).refresh();
+                ref.invalidate(balanceProvider);
                 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -969,6 +970,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
               try {
                 await ref.read(loanContactsProvider.notifier).deleteContact(widget.contactId);
                 ref.read(dashboardProvider.notifier).refresh();
+                ref.invalidate(balanceProvider);
                 if (context.mounted) {
                   Navigator.pop(context);
                   context.pop();
