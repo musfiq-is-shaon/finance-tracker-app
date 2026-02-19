@@ -312,18 +312,6 @@ class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> with Wi
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/loan-contact/${contact.id}', extra: 'payment'),
-                    icon: Icon(Icons.payments, size: 16, color: AppTheme.successColor),
-                    label: Text('Pay', style: TextStyle(color: AppTheme.successColor, fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.successColor.withOpacity(0.5)),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
               ],
             ),
           ],

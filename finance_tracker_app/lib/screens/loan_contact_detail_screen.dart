@@ -13,7 +13,7 @@ import '../../models/loan_activity.dart';
 
 class LoanContactDetailScreen extends ConsumerStatefulWidget {
   final String contactId;
-  final String? initialAction; // 'give', 'borrow', 'payment'
+  final String? initialAction; // 'give', 'borrow'
 
   const LoanContactDetailScreen({
     super.key,
@@ -236,7 +236,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
               children: [
                 Expanded(
                   child: _buildActionButton(
-                    'Give More',
+                    'Give Loan',
                     Icons.arrow_forward,
                     AppTheme.loanGivenColor,
                     () => _showAddActivityDialog(context, 'give'),
@@ -245,19 +245,10 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildActionButton(
-                    'Borrow More',
+                    'Borrow Money',
                     Icons.arrow_back,
                     AppTheme.loanBorrowedColor,
                     () => _showAddActivityDialog(context, 'borrow'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildActionButton(
-                    'Record Payment',
-                    Icons.payments,
-                    AppTheme.successColor,
-                    () => _showAddActivityDialog(context, 'payment'),
                   ),
                 ),
               ],
@@ -592,11 +583,6 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
         title = 'Borrow Money';
         color = AppTheme.loanBorrowedColor;
         break;
-      case 'payment':
-        activityType = 'payment_received';
-        title = 'Record Payment';
-        color = AppTheme.successColor;
-        break;
       default:
         return;
     }
@@ -646,9 +632,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
-                            actionType == 'give'
-                                ? Icons.arrow_forward
-                                : (actionType == 'borrow' ? Icons.arrow_back : Icons.payments),
+                            actionType == 'give' ? Icons.arrow_forward : Icons.arrow_back,
                             color: color,
                           ),
                         ),

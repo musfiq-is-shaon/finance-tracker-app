@@ -1,27 +1,20 @@
-# TODO: Delete Functionality for Loan Activities
+# TODO: Remove Payment Functionality from Loan Feature
 
-## Task
-Add delete functionality for loan activities with proper balance recalculation and UI updates.
+## Task: Remove "Record Payment" / "Pay Now" option from loan feature
 
-## Steps:
+### Changes Required:
 
-### Step 1: Backend - Add delete activity endpoint
-- [x] Add `DELETE /loan-contacts/<contact_id>/activities/<activity_id>` endpoint in `backend/routes/loan_contacts_routes.py`
-- [x] Implement balance recalculation for subsequent activities
-- [x] Update contact's current balance after deletion
+- [x] 1. Remove "Pay" button from loan_contacts_screen.dart
+- [x] 2. Remove 'payment' case from _showAddActivityDialog in loan_contact_detail_screen.dart
+- [x] 3. Clean up payment-related code in loan_contact_detail_screen.dart
 
-### Step 2: API Service - Add delete method
-- [x] Add `deleteLoanActivity(String contactId, String activityId)` method in `finance_tracker_app/lib/services/api_service.dart`
+### Files to Edit:
+1. finance_tracker_app/lib/screens/loan_contacts_screen.dart
+2. finance_tracker_app/lib/screens/loan_contact_detail_screen.dart
 
-### Step 3: Provider - Add delete activity method
-- [x] Add `deleteActivity(String contactId, String activityId)` method in `finance_tracker_app/lib/providers/loan_contacts_provider.dart`
-
-### Step 4: UI - Add delete functionality to activity items
-- [x] Add long-press delete option on activity items in `loan_contact_detail_screen.dart`
-- [x] Add delete confirmation dialog
-- [x] Handle case when all activities are deleted (show empty state)
-- [x] Refresh contact details and dashboard after deletion
-
-## Status: COMPLETED ✅
-
+## Completed Changes:
+- ✅ Removed "Pay" button from the contact card quick actions in loan_contacts_screen.dart
+- ✅ Removed the 'payment' case from the switch statement in _showAddActivityDialog
+- ✅ Updated the initialAction comment to remove 'payment' reference
+- ✅ Fixed the icon selection logic to use arrow_back instead of payments icon
 
