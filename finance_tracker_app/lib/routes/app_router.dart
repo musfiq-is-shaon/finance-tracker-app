@@ -8,6 +8,8 @@ import '../screens/add_transaction_screen.dart';
 import '../screens/transaction_history_screen.dart';
 import '../screens/add_loan_screen.dart';
 import '../screens/loan_list_screen.dart';
+import '../screens/loan_contacts_screen.dart';
+import '../screens/loan_contact_detail_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/ai_assistant_screen.dart';
@@ -71,6 +73,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/loans',
         builder: (context, state) => const LoanListScreen(),
+      ),
+      GoRoute(
+        path: '/loan-contacts',
+        builder: (context, state) => const LoanContactsScreen(),
+      ),
+      GoRoute(
+        path: '/loan-contact/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final action = state.extra as String?;
+          return LoanContactDetailScreen(contactId: id, initialAction: action);
+        },
       ),
       GoRoute(
         path: '/analytics',

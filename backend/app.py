@@ -4,6 +4,7 @@ from config import Config
 from routes.auth_routes import auth_bp
 from routes.transaction_routes import transaction_bp
 from routes.loan_routes import loan_bp
+from routes.loan_contacts_routes import loan_contacts_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.ai_routes import ai_bp
 
@@ -20,6 +21,7 @@ CORS(app,
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(transaction_bp, url_prefix='/api/transactions')
 app.register_blueprint(loan_bp, url_prefix='/api/loans')
+app.register_blueprint(loan_contacts_bp, url_prefix='/api/loan-contacts')
 app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
 app.register_blueprint(ai_bp, url_prefix='/api/ai')
 

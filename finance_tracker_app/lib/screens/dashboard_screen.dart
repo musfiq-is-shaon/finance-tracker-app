@@ -101,7 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               context.push('/transactions');
               break;
             case 2:
-              context.push('/loans');
+              context.push('/loan-contacts');
               break;
             case 3:
               context.push('/analytics');

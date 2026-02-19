@@ -209,6 +209,96 @@ class ApiService {
     }
   }
 
+  // Loan Contacts endpoints (new person-centric system)
+  static Future<List<dynamic>> getLoanContacts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/loan-contacts'),
+        headers: await _getHeaders(),
+      );
+      final data = _handleResponse(response);
+      return data['contacts'] as List<dynamic>;
+    } catch (e) {
+      throw Exception('Failed to get loan contacts: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> createLoanContact(Map<String, dynamic> contact) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/loan-contacts'),
+        headers: await _getHeaders(),
+        body: jsonEncode(contact),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to create loan contact: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getLoanContactDetails(String contactId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/loan-contacts/$contactId'),
+        headers: await _getHeaders(),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to get loan contact details: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateLoanContact(String contactId, Map<String, dynamic> contact) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/loan-contacts/$contactId'),
+        headers: await _getHeaders(),
+        body: jsonEncode(contact),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update loan contact: $e');
+    }
+  }
+
+  static Future<void> deleteLoanContact(String contactId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/loan-contacts/$contactId'),
+        headers: await _getHeaders(),
+      );
+      _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to delete loan contact: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> addLoanActivity(String contactId, Map<String, dynamic> activity) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/loan-contacts/$contactId/activities'),
+        headers: await _getHeaders(),
+        body: jsonEncode(activity),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to add loan activity: $e');
+    }
+  }
+
+  static Future<List<dynamic>> getLoanActivities(String contactId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/loan-contacts/$contactId/activities'),
+        headers: await _getHeaders(),
+      );
+      final data = _handleResponse(response);
+      return data['activities'] as List<dynamic>;
+    } catch (e) {
+      throw Exception('Failed to get loan activities: $e');
+    }
+  }
+
   // Dashboard endpoints
   static Future<Map<String, dynamic>> getDashboard() async {
     try {

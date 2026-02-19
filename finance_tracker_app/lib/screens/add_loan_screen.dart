@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/theme/app_theme.dart';
-import '../providers/loan_provider.dart';
+import '../providers/loan_contacts_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/glass_card.dart';
 
@@ -28,6 +28,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   double _currentBalance = 0.0;
+  bool _isCreatingNewContact = true; // Toggle between new contact or existing
 
   @override
   void initState() {
@@ -137,6 +138,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   Future<void> _saveLoan() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // For 'given' loans, check balance
     if (_type == 'given') {
       final amount = double.tryParse(_amountController.text) ?? 0;
       if (amount > _currentBalance) {
@@ -153,20 +155,39 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(loansProvider.notifier).addLoan(
-        type: _type,
-        personName: _nameController.text,
-        phoneNumber: _phoneController.text.isNotEmpty ? _phoneController.text : null,
-        amount: double.parse(_amountController.text),
-        description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-        date: _selectedDate,
-      );
+      final activityType = _type == 'given' ? 'given' : 'borrowed';
+      
+      if (_isCreatingNewContact) {
+        // Create new contact with first activity
+        final contact = await ref.read(loanContactsProvider.notifier).createContact(
+          name: _nameController.text,
+          phoneNumber: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        );
+        
+        if (contact != null) {
+          // Add first activity
+          await ref.read(loanActivityProvider.notifier).addActivity(
+            contactId: contact.id,
+            activityType: activityType,
+            amount: double.parse(_amountController.text),
+            description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+            activityDate: _selectedDate,
+          );
+        }
+      } else {
+        // Use existing contact - navigate to contact detail to add activity
+        // Show contact picker first
+        if (mounted) {
+          _showContactPicker(activityType);
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
       
       ref.invalidate(dashboardProvider);
-      await ref.read(dashboardProvider.notifier).refresh();
-      ref.invalidate(balanceProvider);
-      ref.invalidate(loansProvider);
-      await ref.read(loansProvider.notifier).loadLoans();
+      ref.read(dashboardProvider.notifier).refresh();
+      ref.invalidate(loanContactsProvider);
+      await ref.read(loanContactsProvider.notifier).loadContacts();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -195,6 +216,116 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showContactPicker(String activityType) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final contactsAsync = ref.read(loanContactsProvider);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Select Contact',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                ),
+              ),
+            ),
+            Expanded(
+              child: contactsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (contacts) {
+                  if (contacts.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.people_outline, size: 48, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No contacts yet',
+                            style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    controller: scrollController,
+                    itemCount: contacts.length,
+                    itemBuilder: (context, index) {
+                      final contact = contacts[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
+                          child: Text(
+                            contact.name[0].toUpperCase(),
+                            style: const TextStyle(color: AppTheme.primaryColor),
+                          ),
+                        ),
+                        title: Text(
+                          contact.name,
+                          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                        ),
+                        subtitle: Text(
+                          'Balance: ৳${contact.currentBalance.abs().toStringAsFixed(2)} ${contact.currentBalance > 0 ? "(They owe you)" : (contact.currentBalance < 0 ? "(You owe)" : "(Settled)")}',
+                          style: TextStyle(
+                            color: contact.currentBalance > 0 
+                                ? AppTheme.loanGivenColor 
+                                : (contact.currentBalance < 0 ? AppTheme.loanBorrowedColor : Colors.grey),
+                          ),
+                        ),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await ref.read(loanActivityProvider.notifier).addActivity(
+                            contactId: contact.id,
+                            activityType: activityType,
+                            amount: double.parse(_amountController.text),
+                            description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+                            activityDate: _selectedDate,
+                          );
+                          ref.invalidate(dashboardProvider);
+                          ref.read(dashboardProvider.notifier).refresh();
+                          ref.invalidate(loanContactsProvider);
+                          ref.invalidate(loanContactDetailsProvider(contact.id));
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Loan added successfully'),
+                                backgroundColor: AppTheme.successColor,
+                              ),
+                            );
+                            context.pop();
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -270,6 +401,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Loan Type Selection
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -298,6 +431,38 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Contact Selection Toggle
+              GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contact',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildContactToggle(true, 'New Contact', isDarkMode),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildContactToggle(false, 'Existing Contact', isDarkMode),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Person Name
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -313,19 +478,21 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                             color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                           ),
                         ),
-                        TextButton.icon(
-                          onPressed: _pickContact,
-                          icon: const Icon(Icons.contacts, size: 18),
-                          label: const Text('Pick Contact'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
+                        if (_isCreatingNewContact)
+                          TextButton.icon(
+                            onPressed: _pickContact,
+                            icon: const Icon(Icons.contacts, size: 18),
+                            label: const Text('Pick Contact'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _nameController,
+                      enabled: _isCreatingNewContact,
                       style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
                       decoration: InputDecoration(
                         hintText: 'Enter name',
@@ -333,6 +500,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                         prefixIcon: Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey),
                       ),
                       validator: (value) {
+                        if (!_isCreatingNewContact) return null;
                         if (value == null || value.isEmpty) {
                           return 'Please enter the person name';
                         }
@@ -343,6 +511,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Phone Number
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -358,6 +528,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _phoneController,
+                      enabled: _isCreatingNewContact,
                       keyboardType: TextInputType.phone,
                       style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
                       decoration: InputDecoration(
@@ -370,6 +541,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Amount
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -424,6 +597,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Date
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -462,6 +637,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Description
               GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -489,6 +666,8 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+              
+              // Save Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveLoan,
                 style: ElevatedButton.styleFrom(
@@ -545,6 +724,49 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
             fontWeight: FontWeight.bold,
             color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactToggle(bool isNew, String label, bool isDarkMode) {
+    final isSelected = _isCreatingNewContact == isNew;
+    final color = AppTheme.primaryColor;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isCreatingNewContact = isNew;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : (isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.3)),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isNew ? Icons.person_add : Icons.people,
+              size: 18,
+              color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+              ),
+            ),
+          ],
         ),
       ),
     );
