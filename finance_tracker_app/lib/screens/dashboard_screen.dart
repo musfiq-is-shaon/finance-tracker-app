@@ -323,7 +323,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildActionButton('Add Loan', AppTheme.primaryColor, Icons.account_balance, () => context.push('/add-loan', extra: 'given'), isDarkMode),
+              child: _buildActionButton('Add Loan', AppTheme.primaryColor, Icons.account_balance, () => context.push('/loan-contacts'), isDarkMode),
             ),
           ],
         ),
@@ -581,8 +581,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 24),
             _buildOptionTile('Income', 'Add money received', AppTheme.incomeColor, Icons.arrow_downward, () { Navigator.pop(context); context.push('/add-transaction', extra: 'income'); }, isDarkMode),
             _buildOptionTile('Expense', 'Add money spent', AppTheme.expenseColor, Icons.arrow_upward, () { Navigator.pop(context); context.push('/add-transaction', extra: 'expense'); }, isDarkMode),
-            _buildOptionTile('Loan Given', 'Money you lent', AppTheme.loanGivenColor, Icons.arrow_forward, () { Navigator.pop(context); context.push('/add-loan', extra: 'given'); }, isDarkMode),
-            _buildOptionTile('Loan Borrowed', 'Money you owe', AppTheme.loanBorrowedColor, Icons.arrow_back, () { Navigator.pop(context); context.push('/add-loan', extra: 'borrowed'); }, isDarkMode),
+            _buildOptionTile('Loan', 'Manage loans', AppTheme.primaryColor, Icons.account_balance, () { Navigator.pop(context); context.push('/loan-contacts'); }, isDarkMode),
           ],
         ),
       ),
