@@ -263,3 +263,67 @@ def add_activity(contact_id):
 # Import datetime for the add_activity function
 from datetime import datetime
 
+
+@loan_contacts_bp.route('/<contact_id>/activities/<activity_id>', methods=['DELETE'])
+def delete_activity(contact_id, activity_id):
+    user_id = get_user_from_token()
+    if not user_id:
+        return jsonify({'message': 'Unauthorized'}), 401
+    
+    supabase = get_client()
+    
+    # Verify contact ownership
+    contact = supabase.table('loan_contacts').select('id').eq('id', contact_id).eq('user_id', user_id).execute()
+    if not contact.data:
+        return jsonify({'message': 'Contact not found'}), 404
+    
+    # Get the activity to delete
+    activity = supabase.table('loan_activities').select('*').eq('id', activity_id).eq('contact_id', contact_id).execute()
+    if not activity.data:
+        return jsonify({'message': 'Activity not found'}), 404
+    
+    activity_data = activity.data[0]
+    deleted_activity_date = activity_data.get('activity_date')
+    deleted_activity_type = activity_data['activity_type']
+    deleted_amount = activity_data['amount']
+    
+    # Delete the activity
+    supabase.table('loan_activities').delete().eq('id', activity_id).execute()
+    
+    # Get all remaining activities after the deleted one (in chronological order)
+    remaining_activities = supabase.table('loan_activities').select('*').eq('contact_id', contact_id).order('activity_date', ascending=True).order('created_at', ascending=True).execute()
+    
+    # Recalculate balances for remaining activities
+    # First, find the balance before the deleted activity
+    prev_activity = supabase.table('loan_activities').select('balance_after').eq('contact_id', contact_id).lte('activity_date', deleted_activity_date).order('activity_date', desc=True).order('created_at', desc=True).limit(1).execute()
+    
+    previous_balance = prev_activity.data[0]['balance_after'] if prev_activity.data else 0
+    
+    # Now recalculate all subsequent activities
+    for remaining in remaining_activities.data:
+        # Calculate what the balance should be based on the new previous balance
+        remaining_type = remaining['activity_type']
+        remaining_amount = remaining['amount']
+        
+        if remaining_type == 'given':
+            new_balance = previous_balance + remaining_amount
+        elif remaining_type == 'borrowed':
+            new_balance = previous_balance - remaining_amount
+        elif remaining_type == 'payment_received':
+            new_balance = previous_balance - remaining_amount
+        elif remaining_type == 'payment_made':
+            new_balance = previous_balance + remaining_amount
+        else:
+            new_balance = previous_balance
+        
+        # Update this activity's balance
+        supabase.table('loan_activities').update({'balance_after': new_balance}).eq('id', remaining['id']).execute()
+        
+        # Set this as the new previous balance for the next iteration
+        previous_balance = new_balance
+    
+    # Update contact's updated_at timestamp
+    supabase.table('loan_contacts').update({'updated_at': 'now()'}).eq('id', contact_id).execute()
+    
+    return jsonify({'message': 'Activity deleted', 'new_balance': previous_balance}), 200
+

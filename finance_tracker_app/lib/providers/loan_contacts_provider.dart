@@ -99,6 +99,16 @@ class LoanActivityNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> deleteActivity(String contactId, String activityId) async {
+    state = const AsyncValue.loading();
+    try {
+      await ApiService.deleteLoanActivity(contactId, activityId);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
 
 final loanActivityProvider = StateNotifierProvider<LoanActivityNotifier, AsyncValue<void>>((ref) {

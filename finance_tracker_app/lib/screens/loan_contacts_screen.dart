@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/loan_contact.dart';
 import '../../providers/loan_contacts_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../utils/formatters.dart';
@@ -15,7 +16,7 @@ class LoanContactsScreen extends ConsumerStatefulWidget {
   ConsumerState<LoanContactsScreen> createState() => _LoanContactsScreenState();
 }
 
-class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> {
+class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> with WidgetsBindingObserver {
   String _searchQuery = '';
   bool _showOwedOnly = false;
   bool _showBorrowedOnly = false;
@@ -23,15 +24,49 @@ class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(loanContactsProvider.notifier).loadContacts();
+      // Force reload contacts when screen is opened
+      _loadContacts();
     });
+  }
+
+  Future<void> _loadContacts() async {
+    await ref.read(loanContactsProvider.notifier).loadContacts();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh contacts when screen is resumed
+      _loadContacts();
+    }
+  }
+
+  Future<void> _refreshContacts() async {
+    await ref.read(loanContactsProvider.notifier).loadContacts();
   }
 
   @override
   Widget build(BuildContext context) {
     final contactsAsync = ref.watch(loanContactsProvider);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Watch for changes - if data is empty, trigger reload
+    ref.listen<AsyncValue<List<LoanContact>>>(loanContactsProvider, (previous, next) {
+      next.whenData((contacts) {
+        if (contacts.isEmpty && previous?.hasValue == true) {
+          // Data was cleared, reload
+          _loadContacts();
+        }
+      });
+    });
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
@@ -474,118 +509,120 @@ class _LoanContactsScreenState extends ConsumerState<LoanContactsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Form(
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: StatefulBuilder(
+          builder: (context, setModalState) => Form(
             key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Add New Contact',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Add New Contact',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                        ),
                       ),
-                    ),
-                    // Pick from contacts button
-                    TextButton.icon(
-                      onPressed: pickContact,
-                      icon: const Icon(Icons.contacts, size: 20),
-                      label: const Text('Pick Contact'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
+                      // Pick from contacts button
+                      TextButton.icon(
+                        onPressed: pickContact,
+                        icon: const Icon(Icons.contacts, size: 20),
+                        label: const Text('Pick Contact'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.primaryColor,
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Create a new loan relationship',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Create a new loan relationship',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
                   ),
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: nameController,
-                  style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
-                    prefixIcon: Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: nameController,
+                    style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                      prefixIcon: Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a name';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
-                  decoration: InputDecoration(
-                    labelText: 'Phone (Optional)',
-                    labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
-                    prefixIcon: Icon(Icons.phone, color: isDarkMode ? Colors.white54 : Colors.grey),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                    decoration: InputDecoration(
+                      labelText: 'Phone (Optional)',
+                      labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+                      prefixIcon: Icon(Icons.phone, color: isDarkMode ? Colors.white54 : Colors.grey),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            try {
-                              final contact = await ref.read(loanContactsProvider.notifier).createContact(
-                                name: nameController.text,
-                                phoneNumber: phoneController.text.isNotEmpty ? phoneController.text : null,
-                              );
-                              if (contact != null && context.mounted) {
-                                Navigator.pop(context);
-                                // Navigate to add first activity
-                                context.push('/loan-contact/${contact.id}');
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: $e')),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (formKey.currentState!.validate()) {
+                              try {
+                                final contact = await ref.read(loanContactsProvider.notifier).createContact(
+                                  name: nameController.text,
+                                  phoneNumber: phoneController.text.isNotEmpty ? phoneController.text : null,
                                 );
+                                if (contact != null && context.mounted) {
+                                  Navigator.pop(context);
+                                  // Navigate to add first activity
+                                  context.push('/loan-contact/${contact.id}');
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
                               }
                             }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                          ),
+                          child: const Text('Create'),
                         ),
-                        child: const Text('Create'),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

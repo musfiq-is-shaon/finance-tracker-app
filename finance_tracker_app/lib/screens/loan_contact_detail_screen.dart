@@ -84,7 +84,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
       slivers: [
         // App Bar
         SliverAppBar(
-          expandedHeight: 200,
+          expandedHeight: 240,
           pinned: true,
           backgroundColor: isDarkMode ? AppTheme.darkBackgroundColor : AppTheme.lightBackgroundColor,
           leading: IconButton(
@@ -406,72 +406,164 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: GlassCard(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onLongPress: () => _showDeleteActivityDialog(context, activity),
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      actionText,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      Formatters.formatDate(activity.activityDate),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.white54 : Colors.grey,
+                      ),
+                    ),
+                    if (activity.description != null && activity.description!.isNotEmpty)
+                      Text(
+                        activity.description!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    actionText,
+                    '${isPositive ? '+' : '-'} ${Formatters.formatCurrency(activity.amount)}',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                      fontWeight: FontWeight.bold,
+                      color: color,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    Formatters.formatDate(activity.activityDate),
+                    'Balance: ${Formatters.formatCurrency(activity.balanceAfter.abs())}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: isDarkMode ? Colors.white54 : Colors.grey,
                     ),
                   ),
-                  if (activity.description != null && activity.description!.isNotEmpty)
-                    Text(
-                      activity.description!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${isPositive ? '+' : '-'} ${Formatters.formatCurrency(activity.amount)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: isDarkMode ? Colors.white54 : Colors.grey,
+                  size: 20,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Balance: ${Formatters.formatCurrency(activity.balanceAfter.abs())}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDarkMode ? Colors.white54 : Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ],
+                onPressed: () => _showDeleteActivityDialog(context, activity),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _showDeleteActivityDialog(BuildContext context, LoanActivity activity) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    String actionText;
+    switch (activity.activityType) {
+      case LoanActivityType.given:
+        actionText = 'Loan Given';
+        break;
+      case LoanActivityType.borrowed:
+        actionText = 'Loan Taken';
+        break;
+      case LoanActivityType.paymentReceived:
+        actionText = 'Payment Received';
+        break;
+      case LoanActivityType.paymentMade:
+        actionText = 'Payment Made';
+        break;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+        title: Text(
+          'Delete Activity?',
+          style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+        ),
+        content: Text(
+          'This will delete the "$actionText" of ${Formatters.formatCurrency(activity.amount)}. The balance will be recalculated for all remaining activities. This action cannot be undone.',
+          style: TextStyle(color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(loanActivityProvider.notifier).deleteActivity(
+                  widget.contactId,
+                  activity.id,
+                );
+                // Invalidate providers to ensure fresh data
+                ref.invalidate(loanContactDetailsProvider(widget.contactId));
+                ref.invalidate(loanContactsProvider);
+                // Force reload contacts
+                ref.read(loanContactsProvider.notifier).loadContacts();
+                ref.read(dashboardProvider.notifier).refresh();
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Activity deleted successfully'),
+                      backgroundColor: AppTheme.successColor,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppTheme.errorColor,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
@@ -482,6 +574,8 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     DateTime selectedDate = DateTime.now();
+    double availableBalance = 0;
+    bool isLoadingBalance = true;
 
     String activityType;
     String title;
@@ -507,6 +601,12 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
         return;
     }
 
+    // Fetch available balance for validation
+    ref.read(balanceProvider).whenData((balance) {
+      availableBalance = balance;
+      isLoadingBalance = false;
+    });
+
     showModalBottomSheet(
       context: context,
       backgroundColor: isDarkMode ? AppTheme.darkCardColor : AppTheme.lightCardColor,
@@ -514,186 +614,246 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            // Watch for balance changes
+            final balanceAsync = ref.watch(balanceProvider);
+            balanceAsync.whenData((balance) {
+              availableBalance = balance;
+              isLoadingBalance = false;
+            });
+            
+            return Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            actionType == 'give'
+                                ? Icons.arrow_forward
+                                : (actionType == 'borrow' ? Icons.arrow_back : Icons.payments),
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Show available balance for 'give' action
+                    if (actionType == 'give') ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.account_balance_wallet,
+                              color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Available Balance: ',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                              ),
+                            ),
+                            if (isLoadingBalance)
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              Text(
+                                Formatters.formatCurrency(availableBalance),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: availableBalance > 0 ? AppTheme.successColor : AppTheme.errorColor,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                      child: Icon(
-                        actionType == 'give'
-                            ? Icons.arrow_forward
-                            : (actionType == 'borrow' ? Icons.arrow_back : Icons.payments),
-                        color: color,
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        prefixText: '৳ ',
+                        prefixStyle: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                        hintText: '0.00',
+                        hintStyle: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white24 : Colors.grey.withOpacity(0.3),
+                        ),
+                        border: InputBorder.none,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Enter amount';
+                        }
+                        final amount = double.tryParse(value);
+                        if (amount == null || amount <= 0) {
+                          return 'Enter valid amount';
+                        }
+                        // Check balance for 'give' action
+                        if (actionType == 'give' && amount > availableBalance) {
+                          return 'Insufficient balance';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Date picker
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 20),
+                      ),
+                      title: Text(
+                        'Date',
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                      subtitle: Text(
+                        Formatters.formatDate(selectedDate),
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setModalState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      maxLines: 2,
+                      style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
+                      decoration: InputDecoration(
+                        hintText: 'Add note (optional)',
+                        hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            try {
+                              await ref.read(loanActivityProvider.notifier).addActivity(
+                                contactId: widget.contactId,
+                                activityType: activityType,
+                                amount: double.parse(amountController.text),
+                                description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
+                                activityDate: selectedDate,
+                              );
+                              // Refresh data
+                              ref.invalidate(loanContactDetailsProvider(widget.contactId));
+                              ref.invalidate(loanContactsProvider);
+                              // Force reload contacts
+                              ref.read(loanContactsProvider.notifier).loadContacts();
+                              ref.read(dashboardProvider.notifier).refresh();
+                              
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('$title successfully'),
+                                    backgroundColor: AppTheme.successColor,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: AppTheme.errorColor,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          'Save $title',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: InputDecoration(
-                    prefixText: '৳ ',
-                    prefixStyle: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                    hintText: '0.00',
-                    hintStyle: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white24 : Colors.grey.withOpacity(0.3),
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter amount';
-                    }
-                    final amount = double.tryParse(value);
-                    if (amount == null || amount <= 0) {
-                      return 'Enter valid amount';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // Date picker
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.calendar_today, color: AppTheme.primaryColor, size: 20),
-                  ),
-                  title: Text(
-                    'Date',
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.white70 : AppTheme.lightSubTextColor,
-                      fontSize: 12,
-                    ),
-                  ),
-                  subtitle: Text(
-                    Formatters.formatDate(selectedDate),
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.white : AppTheme.lightTextColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) {
-                      setModalState(() => selectedDate = date);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: descriptionController,
-                  maxLines: 2,
-                  style: TextStyle(color: isDarkMode ? Colors.white : AppTheme.lightTextColor),
-                  decoration: InputDecoration(
-                    hintText: 'Add note (optional)',
-                    hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (formKey.currentState!.validate()) {
-                        try {
-                          await ref.read(loanActivityProvider.notifier).addActivity(
-                            contactId: widget.contactId,
-                            activityType: activityType,
-                            amount: double.parse(amountController.text),
-                            description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                            activityDate: selectedDate,
-                          );
-                          // Refresh data
-                          ref.invalidate(loanContactDetailsProvider(widget.contactId));
-                          ref.invalidate(loanContactsProvider);
-                          ref.read(dashboardProvider.notifier).refresh();
-                          
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$title successfully'),
-                                backgroundColor: AppTheme.successColor,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                                backgroundColor: AppTheme.errorColor,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      'Save $title',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

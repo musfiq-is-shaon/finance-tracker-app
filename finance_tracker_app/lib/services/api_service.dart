@@ -299,6 +299,18 @@ class ApiService {
     }
   }
 
+  static Future<void> deleteLoanActivity(String contactId, String activityId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/loan-contacts/$contactId/activities/$activityId'),
+        headers: await _getHeaders(),
+      );
+      _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to delete loan activity: $e');
+    }
+  }
+
   // Dashboard endpoints
   static Future<Map<String, dynamic>> getDashboard() async {
     try {

@@ -1,72 +1,27 @@
-# Person-Centric Loan System Implementation - COMPLETED
+# TODO: Delete Functionality for Loan Activities
 
-## Phase 1: Database Schema Changes ✅
+## Task
+Add delete functionality for loan activities with proper balance recalculation and UI updates.
 
-### New Tables:
-- [x] `loan_contacts` - Unique persons for loans
-- [x] `loan_activities` - Individual loan transactions (given, borrowed, payment received, payment made)
-- [x] Added foreign key to loans table for contact reference
-- [x] Database functions for balance calculation and activity management
+## Steps:
 
-## Phase 2: Backend API ✅
+### Step 1: Backend - Add delete activity endpoint
+- [x] Add `DELETE /loan-contacts/<contact_id>/activities/<activity_id>` endpoint in `backend/routes/loan_contacts_routes.py`
+- [x] Implement balance recalculation for subsequent activities
+- [x] Update contact's current balance after deletion
 
-### New Endpoints:
-- [x] `GET /api/loan-contacts` - List all loan contacts
-- [x] `POST /api/loan-contacts` - Create new contact
-- [x] `PUT /api/loan-contacts/:id` - Update contact
-- [x] `DELETE /api/loan-contacts/:id` - Delete contact
-- [x] `GET /api/loan-contacts/:id` - Get contact details with activities
-- [x] `POST /api/loan-contacts/:id/activities` - Add new activity
-- [x] `GET /api/loan-contacts/:id/activities` - Get activities for contact
+### Step 2: API Service - Add delete method
+- [x] Add `deleteLoanActivity(String contactId, String activityId)` method in `finance_tracker_app/lib/services/api_service.dart`
 
-## Phase 3: Frontend Models ✅
+### Step 3: Provider - Add delete activity method
+- [x] Add `deleteActivity(String contactId, String activityId)` method in `finance_tracker_app/lib/providers/loan_contacts_provider.dart`
 
-### New Models:
-- [x] `LoanContact` - Person with loan relationship
-- [x] `LoanActivity` - Individual loan transaction with activity types
+### Step 4: UI - Add delete functionality to activity items
+- [x] Add long-press delete option on activity items in `loan_contact_detail_screen.dart`
+- [x] Add delete confirmation dialog
+- [x] Handle case when all activities are deleted (show empty state)
+- [x] Refresh contact details and dashboard after deletion
 
-## Phase 4: Frontend Providers ✅
+## Status: COMPLETED ✅
 
-### New Providers:
-- [x] `loanContactsProvider` - State management for contacts
-- [x] `loanContactDetailsProvider` - Details with activities
-- [x] `loanActivityProvider` - Add activities
-- [x] `totalLoansGivenProvider` - Summary stats
-- [x] `totalLoansBorrowedProvider` - Summary stats
-
-## Phase 5: Frontend Screens ✅
-
-### New Screens:
-- [x] `LoanContactsScreen` - List of all loan contacts
-- [x] `LoanContactDetailScreen` - Person's loan activities & partial payments
-
-### Updated Screens:
-- [x] `AddLoanScreen` - Add to existing contact or create new
-- [x] `DashboardScreen` - Links to new contacts screen
-
-## Phase 6: Dependencies & Routes ✅
-
-- [x] Added url_launcher dependency
-- [x] Updated app_router with new routes
-- [x] Updated pubspec.yaml
-
-## Key Features Implemented:
-
-1. **Person-Centric Loans**: Each person has a running balance
-2. **Quick Actions**: Give More, Borrow More, Record Payment directly from contact
-3. **Activity History**: Full transaction history per person
-4. **Partial Payments**: Pay any amount, track running balance
-5. **Search & Filter**: Find contacts by name or phone
-6. **Contact Picker**: Select existing contact or create new one
-7. **Phone Integration**: Call contacts directly from app
-
-## How to Use:
-
-1. **First Time**: Create a new contact with initial loan
-2. **Tap on Contact**: View all activities, current balance
-3. **Give More**: Tap contact → Give More to add more lending
-4. **Borrow More**: Tap contact → Borrow More to record more borrowing  
-5. **Payment**: Tap contact → Record Payment for partial/full payment
-
-The system automatically calculates running balance after each activity!
 
