@@ -313,28 +313,86 @@ class ApiService {
 
   // Dashboard endpoints
   static Future<Map<String, dynamic>> getDashboard() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard'),
-        headers: await _getHeaders(),
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      throw Exception('Failed to get dashboard: $e');
+    // Add retry logic for server errors
+    int maxRetries = 3;
+    int retryDelayMs = 500;
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/dashboard'),
+          headers: await _getHeaders(),
+        ).timeout(const Duration(seconds: 15));
+        
+        // Check for non-JSON responses
+        if (response.body.isEmpty) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Empty response from server');
+        }
+        
+        if (response.body.trim().startsWith('<') || response.body.trim().startsWith('<!DOCTYPE')) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Server error: ${response.statusCode}');
+        }
+        
+        return _handleResponse(response);
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: retryDelayMs * (attempt + 1)));
+          continue;
+        }
+        throw Exception('Failed to get dashboard: $e');
+      }
     }
+    throw Exception('Failed to get dashboard after $maxRetries attempts');
   }
 
   // Get balance for validation
   static Future<Map<String, dynamic>> getBalance() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard/balance'),
-        headers: await _getHeaders(),
-      );
-      return _handleResponse(response);
-    } catch (e) {
-      throw Exception('Failed to get balance: $e');
+    // Add retry logic for server errors
+    int maxRetries = 3;
+    int retryDelayMs = 500;
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/dashboard/balance'),
+          headers: await _getHeaders(),
+        ).timeout(const Duration(seconds: 15));
+        
+        // Check for non-JSON responses
+        if (response.body.isEmpty) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Empty response from server');
+        }
+        
+        if (response.body.trim().startsWith('<') || response.body.trim().startsWith('<!DOCTYPE')) {
+          if (attempt < maxRetries - 1) {
+            await Future.delayed(Duration(milliseconds: retryDelayMs));
+            continue;
+          }
+          throw Exception('Server error: ${response.statusCode}');
+        }
+        
+        return _handleResponse(response);
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: retryDelayMs * (attempt + 1)));
+          continue;
+        }
+        throw Exception('Failed to get balance: $e');
+      }
     }
+    throw Exception('Failed to get balance after $maxRetries attempts');
   }
 
   // AI endpoints
