@@ -151,7 +151,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
       onDismissed: (direction) async {
         await ref.read(transactionsProvider.notifier).deleteTransaction(tx.id);
         await ref.read(dashboardProvider.notifier).refresh();
-        ref.invalidate(balanceProvider);
+        await ref.read(balanceProvider.notifier).refresh();
       },
       child: GlassCard(
         margin: const EdgeInsets.only(bottom: 12),

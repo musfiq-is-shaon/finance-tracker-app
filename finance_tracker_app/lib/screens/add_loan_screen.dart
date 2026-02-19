@@ -34,6 +34,10 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
   void initState() {
     super.initState();
     _type = widget.loanType ?? 'given';
+    // Initialize balance on screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(balanceProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -186,6 +190,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
       
       ref.invalidate(dashboardProvider);
       ref.read(dashboardProvider.notifier).refresh();
+      await ref.read(balanceProvider.notifier).refresh();
       ref.invalidate(loanContactsProvider);
       await ref.read(loanContactsProvider.notifier).loadContacts();
       
@@ -303,6 +308,7 @@ class _AddLoanScreenState extends ConsumerState<AddLoanScreen> {
                           );
                           ref.invalidate(dashboardProvider);
                           ref.read(dashboardProvider.notifier).refresh();
+                          await ref.read(balanceProvider.notifier).refresh();
                           ref.invalidate(loanContactsProvider);
                           ref.invalidate(loanContactDetailsProvider(contact.id));
                           

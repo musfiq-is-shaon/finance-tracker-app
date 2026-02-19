@@ -31,6 +31,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   void initState() {
     super.initState();
     _type = widget.transactionType ?? 'expense';
+    // Initialize balance on screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(balanceProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -568,7 +572,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       
       ref.invalidate(dashboardProvider);
       await ref.read(dashboardProvider.notifier).refresh();
-      ref.invalidate(balanceProvider);
+      await ref.read(balanceProvider.notifier).refresh();
       ref.invalidate(transactionsProvider);
       await ref.read(transactionsProvider.notifier).loadTransactions();
       
