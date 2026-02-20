@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Primary colors (same for both themes)
-  static const Color primaryColor = Color(0xFF6C63FF);
-  static const Color secondaryColor = Color(0xFF00D9FF);
+  // Primary colors - Professional Indigo palette
+  static const Color primaryColor = Color(0xFF4F46E5);
+  static const Color primaryLight = Color(0xFF6366F1);
+  static const Color primaryDark = Color(0xFF4338CA);
+  static const Color secondaryColor = Color(0xFF6366F1);
   
-  // Common colors (same for both themes)
-  static const Color successColor = Color(0xFF00E676);
-  static const Color errorColor = Color(0xFFFF5252);
-  static const Color warningColor = Color(0xFFFFAB40);
-  static const Color incomeColor = Color(0xFF00E676);
-  static const Color expenseColor = Color(0xFFFF5252);
-  static const Color loanGivenColor = Color(0xFF448AFF);
-  static const Color loanBorrowedColor = Color(0xFFFF6E40);
+  // Common colors (status colors - consistent across themes)
+  static const Color successColor = Color(0xFF10B981);  // Emerald - professional green
+  static const Color errorColor = Color(0xFFEF4444);    // Soft red - clear but not harsh
+  static const Color warningColor = Color(0xFFF59E0B);   // Amber - subtle alert
+  static const Color incomeColor = Color(0xFF10B981);    // Emerald
+  static const Color expenseColor = Color(0xFFEF4444);   // Soft red
+  static const Color loanGivenColor = Color(0xFF3B82F6); // Professional blue
+  static const Color loanBorrowedColor = Color(0xFFF97316); // Soft orange
   
-  // Dark theme colors
-  static const Color darkBackgroundColor = Color(0xFF0D0D1A);
-  static const Color darkCardColor = Color(0xFF1A1A2E);
+  // Dark theme colors - Modern Slate palette
+  static const Color darkBackgroundColor = Color(0xFF0F172A);   // Slate 900
+  static const Color darkCardColor = Color(0xFF1E293B);         // Slate 800
+  static const Color darkSurfaceColor = Color(0xFF334155);      // Slate 700
+  static const Color darkTextColor = Color(0xFFF8FAFC);         // Slate 50
+  static const Color darkSubTextColor = Color(0xFF94A3B8);      // Slate 400
   
-  // Light theme colors
-  static const Color lightBackgroundColor = Color(0xFFF5F5F5);
+  // Light theme colors - Clean professional palette
+  static const Color lightBackgroundColor = Color(0xFFF8FAFC);  // Slate 50
   static const Color lightCardColor = Color(0xFFFFFFFF);
-  static const Color lightTextColor = Color(0xFF1A1A2E);
-  static const Color lightSubTextColor = Color(0xFF6B7280);
+  static const Color lightSurfaceColor = Color(0xFFF1F5F9);     // Slate 100
+  static const Color lightTextColor = Color(0xFF1E293B);        // Slate 800
+  static const Color lightSubTextColor = Color(0xFF64748B);     // Slate 500
   
   // Backward compatibility - default to dark theme colors
   static const Color backgroundColor = darkBackgroundColor;
