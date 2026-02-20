@@ -64,6 +64,8 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
         data: (data) {
           final contact = data['contact'];
           final activities = (data['activities'] as List).map((a) => LoanActivity.fromJson(a)).toList();
+          // Sort by createdAt in descending order (most recent first)
+          activities.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return _buildContent(context, contact, activities, isDarkMode);
         },
       ),
@@ -423,7 +425,7 @@ class _LoanContactDetailScreenState extends ConsumerState<LoanContactDetailScree
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      Formatters.formatDate(activity.activityDate),
+                      Formatters.formatDateTime(activity.createdAt),
                       style: TextStyle(
                         fontSize: 12,
                         color: isDarkMode ? Colors.white54 : Colors.grey,

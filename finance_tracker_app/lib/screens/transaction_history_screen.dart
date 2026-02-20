@@ -73,6 +73,9 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
             return true;
           }).toList();
 
+          // Sort by createdAt in descending order (most recent first)
+          filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
           if (filtered.isEmpty) {
             return Center(
               child: Column(
@@ -198,7 +201,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                     const SizedBox(height: 2),
                   ],
                   Text(
-                    Formatters.formatDate(tx.date),
+                    Formatters.formatDateTime(tx.createdAt),
                     style: TextStyle(
                       color: isDarkMode ? Colors.white.withOpacity(0.5) : AppTheme.lightSubTextColor,
                       fontSize: 12,

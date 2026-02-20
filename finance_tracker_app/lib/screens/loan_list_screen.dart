@@ -91,6 +91,9 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
             return true;
           }).toList();
           
+          // Sort by createdAt in descending order (most recent first)
+          filteredLoans.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
           final givenLoans = filteredLoans.where((l) => l.type == 'given').toList();
           final borrowedLoans = filteredLoans.where((l) => l.type == 'borrowed').toList();
 
@@ -247,7 +250,7 @@ class _LoanListScreenState extends ConsumerState<LoanListScreen> with SingleTick
                       ],
                       const SizedBox(height: 4),
                       Text(
-                        Formatters.formatDate(loan.date),
+                        Formatters.formatDateTime(loan.createdAt),
                         style: TextStyle(
                           color: isDarkMode ? Colors.white.withOpacity(0.7) : AppTheme.lightSubTextColor,
                           fontSize: 14,

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 class Formatters {
   static final _currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
   static final _dateFormat = DateFormat('MMM dd, yyyy');
+  static final _dateTimeFormat = DateFormat('MMM dd, yyyy HH:mm');
   static final _shortDateFormat = DateFormat('MMM dd');
   static final _monthYearFormat = DateFormat('MMM yyyy');
 
@@ -12,6 +13,10 @@ class Formatters {
 
   static String formatDate(DateTime date) {
     return _dateFormat.format(date);
+  }
+
+  static String formatDateTime(DateTime date) {
+    return _dateTimeFormat.format(date);
   }
 
   static String formatShortDate(DateTime date) {
